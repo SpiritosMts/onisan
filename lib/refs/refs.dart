@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:onisan/backend/deepLinking/deepLinkConfig.dart';
 import 'package:onisan/backend/pagination/paginationCtr.dart';
+import 'package:onisan/components/appInfo/appInfo.dart';
 import 'package:onisan/components/connection/connectivity.dart';
 import 'package:onisan/components/deviceInfo/deviceInfoService.dart';
 import 'package:onisan/components/json/jsonFormat.dart';
@@ -22,6 +23,7 @@ import '../components/myTheme/themeManager.dart';
 RemoteConfigService get remoteConfigServ => RemoteConfigService.instance;
 DeviceInfoService get deviceInfoServ => DeviceInfoService.instance;
 ConnectivityService get connectivityServ => ConnectivityService.instance;
+AppInfo get appInfoServ => AppInfo.instance;
 User? get fAuthcUser => FirebaseAuth.instance.currentUser;
 FirebaseAuth get fAuth => FirebaseAuth.instance;
 FirebaseDatabase? get database => FirebaseDatabase.instance;//real time database
