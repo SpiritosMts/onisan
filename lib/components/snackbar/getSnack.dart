@@ -36,24 +36,24 @@ void showGetXSnackBar(String message,{
         ],
       ),
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Cm.revOpacity,
       borderRadius: 16.0,
       maxWidth: 150,
-      margin: EdgeInsets.only(left: 16.0, right: 16.0, bottom: 60.0), // Adds padding from the bottom
+      margin: EdgeInsets.only(left: 16.0, right: 16.0, bottom: 65.0), // Adds padding from the bottom
       padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0), // Adjusts inner padding
 
       duration: duration,
       isDismissible: true, // Allows the snackbar to be dismissed by tapping
       overlayBlur: 0, // Ensures no blur effect for the background
-      overlayColor: Colors.transparent, // Keep the background transparent
-      boxShadows: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.2), // Shadow color with opacity
-          blurRadius: 10.0,
-          spreadRadius: 2.0,
-          offset: Offset(0, 4),
-        ),
-      ],
+     // overlayColor: Cm.bgCol2, // Keep the background transparent
+      // boxShadows: [
+      //   BoxShadow(
+      //     color: Colors.black.withOpacity(0.2), // Shadow color with opacity
+      //     blurRadius: 10.0,
+      //     spreadRadius: 2.0,
+      //     offset: Offset(0, 4),
+      //   ),
+      // ],
 
       // mainButton: TextButton(
       //   onPressed: () => Get.closeCurrentSnackbar(),
