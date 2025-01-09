@@ -101,12 +101,27 @@ dynamic get ccUser => CustomVars.getUser();
 
 
 class CustomVars {
-  // Static variables for palettes and Firebase options
+  //collections names
+  static late String usersCollName;
+
+
+  static late String monochromeNotifIcon;//"@drawable/logo_mono"
+  static late String normalNotifIcon;//'@mipmap/launcher_icon'
+
+  //firebase
+
   static late FirebaseOptions firebaseOptions;
+
+  static late DeepLinkConfig deepLinkConfig;
+  static late String vapidKeyNotif;
+  static late String firebaseProjectId;
+
+
+
+  // Static variables for palettes and Firebase options
   static late Map<String, ColorPalette> paletteMap;
   static late ThemeData Function() getAppTheme;
   static late List<GetPage> routes; // Static list for storing app routes
-  static late DeepLinkConfig deepLinkConfig;
 
   // Reactive cUser in onisan
   static late dynamic Function() getUser;
@@ -116,11 +131,23 @@ class CustomVars {
   // Single method to initialize all custom variables
   static void initialize({
     required FirebaseOptions firebaseOpts,
+     String cvUsersCollName="users",
     required Map<String, ColorPalette> palettes,
     required ThemeData Function() themeGetter,
     required List<GetPage> appRoutes,
     required DeepLinkConfig deepLinkCfg,
+
+    required String cvVapidKeyNotif,
+    required String cvFirebaseProjectId,
+    required String cvMonochromeNotifIcon,
+    required String cvNormalNotifIcon,
   }) {
+    vapidKeyNotif = cvVapidKeyNotif;
+    firebaseProjectId = cvFirebaseProjectId;
+    monochromeNotifIcon = cvMonochromeNotifIcon;
+    normalNotifIcon = cvNormalNotifIcon;
+
+    usersCollName = cvUsersCollName;
     routes = appRoutes;
     firebaseOptions = firebaseOpts;
     paletteMap = palettes;

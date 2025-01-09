@@ -15,6 +15,7 @@ export 'backend/remoteConfig/remoteConfigTest.dart';
 export 'backend/security/firebaseRules.dart';
 export 'backend/url/urls.dart';
 export 'components/appInfo/appInfo.dart';
+export 'components/appLifecycle/AppLifecycleService.dart';
 export 'components/buttons/btnFuncs.dart';
 export 'components/buttons/loadingBtn.dart';
 export 'components/buttons/simpleBtn.dart';

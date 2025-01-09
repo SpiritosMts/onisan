@@ -61,7 +61,7 @@ dependencies:
   #
   awesome_dialog: ^3.2.1
   percent_indicator: ^4.2.3
-
+  csc_picker: ^0.2.7
   device_info_plus: ^10.1.2
 
   vibration: ^2.0.0
@@ -92,6 +92,8 @@ dependencies:
   #
 
   google_maps_flutter: ^2.9.0
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
   #go_router: ^14.2.0
   google_fonts: ^6.2.1
   http: ^1.2.1

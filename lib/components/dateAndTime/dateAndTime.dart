@@ -1,4 +1,6 @@
 
+import 'dart:math';
+
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 
@@ -165,4 +167,24 @@ String durationSince2(String creationTime) {
     final years = (difference.inDays / 365).floor();
     return '${years} ${years == 1 ? "year" : "years"} ago';
   }
+}
+
+
+String randomDateBetweenTwoDates() {
+  // Define the start and end dates
+  DateTime startDate = DateTime(2022, 1, 6);
+  DateTime endDate = DateTime(2023, 9, 1);//yyyy mm dd
+
+  // Calculate the difference in days between the two dates
+  int differenceInDays = endDate.difference(startDate).inDays;
+
+  // Generate a random number of days within the range
+  Random random = Random();
+  int randomDays = random.nextInt(differenceInDays);
+
+  // Calculate the random date by adding the random number of days to the start date
+  DateTime randomDate = startDate.add(Duration(days: randomDays));
+
+  // Format the random date as "dd-MM-yyyy HH:mm"
+  return DateFormat("dd-MM-yyyy HH:mm").format(randomDate);
 }

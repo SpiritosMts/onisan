@@ -51,14 +51,11 @@ import '../refs/refs.dart';
 //         jvmTarget = JavaVersion.VERSION_17
 //     }
 
-const String monochromeNotifIcon = "@drawable/logo_mono"; //TODO
-const String normalNotifIcon = '@mipmap/launcher_icon';
+
 
 class FirebaseMessagingCtr extends GetxController {
   ///************************* PROJECT_INFO ******************************************
 
-  String vapidKey = "Un2U9go88bFFp60jsM5QExQKPe6GeYYl7rzgr7FTq80"; //show private key in key pair
-  String _projectId = "pfe-app-cedb9";
 
   Future<Map<String, dynamic>> _loadServiceAccount() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -93,7 +90,7 @@ class FirebaseMessagingCtr extends GetxController {
   late Stream<String> _tokenStream;
 
   streamUserToken() {
-    FirebaseMessaging.instance.getToken(vapidKey: vapidKey).then(setToken);
+    FirebaseMessaging.instance.getToken(vapidKey: CustomVars.vapidKeyNotif).then(setToken);
     _tokenStream = FirebaseMessaging.instance.onTokenRefresh;
     _tokenStream.listen(setToken);
   }
@@ -280,6 +277,8 @@ class FirebaseMessagingCtr extends GetxController {
       print('## Error sending notifications: $e');
     }
   }
+
+  
   void testSendNotifFunc() {
     String specificID = Uuid().v1();
     NotifItem _notifExample = NotifItem(
@@ -450,7 +449,7 @@ Future<void> showDeviceNotification(RemoteMessage message) async {
           channelDescription: channel.description,
           importance: Importance.max,
           priority: Priority.max,
-          icon: monochromeNotifIcon,
+          icon: CustomVars.monochromeNotifIcon,
           playSound: true,
           enableVibration: true,
           styleInformation: bigPictureStyleInformation, // Show image if available
@@ -516,7 +515,7 @@ Future<void> showStackNotification(RemoteMessage message, {String? payload}) asy
           channelDescription: channel.description,
           importance: Importance.max,
           priority: Priority.max,
-          icon: monochromeNotifIcon,
+          icon: CustomVars.monochromeNotifIcon,
           playSound: true,
           enableVibration: true,
           styleInformation: single ? bigTextStyleInformation : inboxStyleInformation, // Inbox style for showing multiple lines
@@ -559,8 +558,8 @@ Future<void> setupFlutterNotifications() async {
     badge: true,
     sound: true,
   );
-  const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings(normalNotifIcon);
-  const InitializationSettings initializationSettings = InitializationSettings(
+   AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings(CustomVars.normalNotifIcon);
+   InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
   );
   //--- initialization ---

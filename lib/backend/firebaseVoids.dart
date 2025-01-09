@@ -12,7 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:onisan/onisan.dart';
 import 'package:path/path.dart' as path;
 
-
+/// ************************** INIT *************************************************
 
 Future<void> tryInitFirebase2() async {
   try {//todo
@@ -37,6 +37,7 @@ Future<void> tryInitFirebase() async {
   }
 }
 
+/// **************************** REAL TIME***********************************************
 
 Future<List<String>> getChildrenKeys(String ref) async {
   List<String> children = [];
@@ -67,10 +68,72 @@ Future<int> getChildrenNum(String ref) async {
   return childrennum;
 }
 
-Future<String> uploadFileToFirebase(File pickedFile,String storagePath) async {
-  String downloadUrl ="";
+/// delete by url
+Future<void> deleteFileByUrlFromStorage(String url) async {
   try {
-    File file = File(pickedFile.path);
+    await FirebaseStorage.instance.refFromURL(url).delete();
+  } catch (e) {
+    print("## Error deleting file: $e");
+  }
+}
+
+/// **************************** STORAGE***********************************************
+
+Future<List<String>> uploadImagesToFirebase(
+    List<XFile?> pickedImages, {
+      String? subPath = 'uploads',
+      void Function(String url)? onUploadSuccess,
+    }) async {
+  List<String> downloadUrls = [];
+
+  try {
+    for (XFile? image in pickedImages) {
+      if (image != null) {
+        print("## Starting upload for image: ${image.name}");
+
+        // Create a reference to Firebase Storage
+        Reference storageRef = FirebaseStorage.instance
+            .ref()
+            .child('$subPath/${DateTime.now().millisecondsSinceEpoch}_${image.name}');
+
+        // Upload the file to Firebase Storage
+        UploadTask uploadTask = storageRef.putFile(File(image.path));
+
+        // Wait until the upload is complete
+        TaskSnapshot taskSnapshot = await uploadTask;
+
+        // Get the download URL
+        String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+        downloadUrls.add(downloadUrl);
+
+        print("## Successfully uploaded image: ${image.name}, URL: $downloadUrl");
+        if (onUploadSuccess != null) {
+          onUploadSuccess(downloadUrl);
+        }
+      }
+    }
+
+    // Print when all uploads are successful
+    print("## Completed uploading ${downloadUrls.length} images.");
+  } catch (e) {
+    print("## Error uploading images to Firebase: $e");
+  }
+
+  return downloadUrls; // Return the list regardless of success or error
+}
+
+
+
+Future<String> uploadFileToFirebase(File? pickedFile,String? storagePath) async {
+  String downloadUrl ="";
+
+  if(pickedFile == null || storagePath == null){
+   print("## cant upload file : (pickedFile == null || storagePath == null)");
+    return "";
+  }
+
+  try {
+    File file = File(pickedFile!.path);
     String fileName = path.basename(pickedFile.path);
 
     String firebasePath = '$storagePath/${DateTime.now().millisecondsSinceEpoch}-${fileName}';
@@ -88,19 +151,21 @@ Future<String> uploadFileToFirebase(File pickedFile,String storagePath) async {
       print("## File uploaded ");
 
     }
-    return downloadUrl;
 
   } catch (e,s) {
     print('## Error uploading file to Firebase: $e');
     debugPrintStack(stackTrace: s);
     rethrow; // Rethrow to pass the error up to the outer catch
 
+  }finally{
+    return downloadUrl;
+
   }
 
 }
 
 /// upload one file to fb
-Future<String> uploadOneImgToFb(String filePath, PickedFile? imageFile) async {
+Future<String> uploadOneImgToFb( PickedFile? imageFile ,String filePath,) async {
   if (imageFile != null) {
     String fileName = path.basename(imageFile.path);
     firebase_storage.Reference ref = firebase_storage.FirebaseStorage.instance.ref('/$filePath/$fileName');
@@ -124,6 +189,104 @@ Future<String> uploadOneImgToFb(String filePath, PickedFile? imageFile) async {
   }
 }
 
+/// ***************************  GET ************************************************
+
+Future<dynamic> getFieldFromFirestore( CollectionReference coll, String docId, String fieldName) async {
+  try {
+    DocumentSnapshot snapshot = await coll.doc(docId).get();
+    if (snapshot.exists) {
+      dynamic docMap = snapshot.data() as Map<String, dynamic>;
+      dynamic fieldValue = docMap[fieldName];
+
+      if (fieldValue is int) {
+        return fieldValue.toDouble(); // Convert int to double
+      } else {
+        return fieldValue;
+      }
+    } else {
+      print('## Document not found <${coll.path}/$docId>');
+      return null;
+    }
+  } catch (error) {
+    print('## Error retrieving field <${coll.path}/$docId/$fieldName> : $error');
+    throw Exception('## Exception ');
+
+  }
+}
+
+Future<List<String>> getDocumentsIDsByFieldName(String fieldName, String filedValue, CollectionReference coll) async {
+  QuerySnapshot snap = await coll
+      .where(fieldName, isEqualTo: filedValue) //condition
+      .get();
+
+  List<String> docsIDs = [];
+  final List<DocumentSnapshot> documentsFound = snap.docs;
+  for (var doc in documentsFound) {
+    docsIDs.add(doc.id);
+  }
+  print('## docs has [$fieldName=$filedValue] =>$docsIDs');
+
+  return docsIDs;
+}
+
+
+
+
+// type DocumentSnapshot
+Future<List<DocumentSnapshot>> getDocumentsByIDs(
+    CollectionReference coll, {
+      List<String> IDs = const [],
+    }) async {
+  // List userStoresIDs = authCtr.cUser.stores!;
+  List userStoresIDs = [];
+  QuerySnapshot snap = (IDs != [] ? await coll.where('id', whereIn: IDs).get() : await coll.get());
+
+  final documentsMap = snap.docs;
+
+  print('## collection:<${coll.path}> docs length =(${documentsMap.length})');
+
+  return documentsMap;
+}
+// type DocumentSnapshot
+Future<List<DocumentSnapshot>> getDocumentsByColl(CollectionReference coll) async {
+  List<DocumentSnapshot> documentsFound =[];
+
+  try{
+    QuerySnapshot snap = await coll.get();
+    documentsFound = snap.docs; //return QueryDocumentSnapshot .data() to convert to json// or "userDoc.get('email')" for each field
+  }catch(err){
+    print('## Failed to get docs in coll<${coll.path}>: $err');
+    throw Exception('## Exception ');
+  }
+  return documentsFound;
+}
+//type T dynamic List<Post>, List<User> ....
+Future<List<T>> getAlldocsModelsFromFb<T>( CollectionReference coll, T Function(Map<String, dynamic>) fromJson,) async {
+  List<T> models = [];
+
+  try {
+
+
+    List<DocumentSnapshot> docs = await getDocumentsByColl(coll);
+    for (var doc in docs) {
+      T model = fromJson(doc.data() as Map<String, dynamic>);
+      models.add(model);
+    }
+    print('## fetched (${models.length}) models; from collection <${coll.path}>');
+
+  } catch (e) {
+    print('## Error fetching models: $e');
+  }
+  return models;
+
+
+
+
+}
+
+// type T but from map of a doc
+
+/// ***************************  ADD ************************************************
 Future<void> addDocumentWithId({
   required CollectionReference coll ,
   required String docID,
@@ -144,9 +307,9 @@ Future<void> addDocumentWithId({
   }
 }
 
+/// ************************** UPDATE *************************************************
 
 
-/// UPDATE document
 Future<void> updateDoc({
   required CollectionReference coll,
   required String docID,
@@ -167,7 +330,7 @@ Future<void> updateDoc({
   }
 }
 
-Future<void> updateDocWithMap({
+Future<void> updateDocMap({
   required CollectionReference coll,
   required String docID,
   required Map<String, dynamic> fieldsMap,
@@ -197,138 +360,8 @@ Future<void> updateDocWithMap({
     throw Exception('Failed to update document <$docID> in collection <${coll.path}>: $error');
   }
 }
-
-/// delete by url
-Future<void> deleteFileByUrlFromStorage(String url) async {
-  try {
-    await FirebaseStorage.instance.refFromURL(url).delete();
-  } catch (e) {
-    print("Error deleting file: $e");
-  }
-}
-
-Future<void> addElementsToList(List newElements, String fieldName, String docID, String collName,
-    {bool canAddExistingElements = true}) async {
-  print('## start adding list <$newElements> TO <$fieldName>_<$docID>_<$collName>');
-
-  CollectionReference coll = FirebaseFirestore.instance.collection(collName);
-
-  coll.doc(docID).get().then((DocumentSnapshot documentSnapshot) async {
-    if (documentSnapshot.exists) {
-      // export existing elements
-      List<dynamic> oldElements = documentSnapshot.get(fieldName);
-      print('## oldElements: $oldElements');
-      // element to add
-      List<dynamic> elementsToAdd = [];
-      if (canAddExistingElements) {
-        elementsToAdd = newElements;
-      } else {
-        for (var element in newElements) {
-          if (!oldElements.contains(element)) {
-            elementsToAdd.add(element);
-          }
-        }
-      }
-
-      print('## elementsToAdd: $elementsToAdd');
-      // add element
-      List<dynamic> newElementList = oldElements + elementsToAdd;
-      print('## newElementListMerged: $newElementList');
-
-      //save elements
-      await coll.doc(docID).update(
-        {
-          fieldName: newElementList,
-        },
-      ).then((value) async {
-        print('## successfully added list <$elementsToAdd> TO <$fieldName>_<$docID>_<$collName>');
-      }).catchError((error) async {
-        print('## failure to add list <$elementsToAdd> TO <$fieldName>_<$docID>_<$collName>');
-      });
-    } else if (!documentSnapshot.exists) {
-      print('## docID not existing');
-    }
-  });
-}
-
-Future<void> removeElementsFromList(List elements, String fieldName, String docID, String collName) async {
-  print('## start deleting list <$elements>_<$fieldName>_$docID>_<$collName>');
-
-  CollectionReference coll = FirebaseFirestore.instance.collection(collName);
-
-  coll.doc(docID).get().then((DocumentSnapshot documentSnapshot) async {
-    if (documentSnapshot.exists) {
-      // export existing elements
-      List<dynamic> oldElements = documentSnapshot.get(fieldName);
-      print('## oldElements:(before delete) $oldElements');
-
-      // remove elements from oldElements
-      List<dynamic> elementsRemoved = [];
-
-      for (var element in elements) {
-        if (oldElements.contains(element)) {
-          oldElements.removeWhere((e) => e == element);
-          elementsRemoved.add(element);
-          //print('# removed <$element> from <$oldElements>');
-        }
-      }
-
-      print('## oldElements:(after delete) $oldElements');
-      await coll.doc(docID).update(
-        {
-          fieldName: oldElements,
-        },
-      ).then((value) async {
-        print('## successfully deleted list <$elementsRemoved> FROM <$fieldName>_<$docID>_<$collName>');
-      }).catchError((error) async {
-        print('## failure to delete list <$elementsRemoved> FROM  <$fieldName>_<$docID>_<$collName>');
-      });
-    } else if (!documentSnapshot.exists) {
-      print('## docID not existing');
-    }
-  });
-}
-
-
-clearCollection(CollectionReference coll) async {
-  var snapshots = await coll.get();
-  for (var doc in snapshots.docs) {
-    print('# delete doc<${doc.id}>');
-    await doc.reference.delete();
-  }
-}
-
-Future<List<String>> getDocumentsIDsByFieldName(String fieldName, String filedValue, CollectionReference coll) async {
-  QuerySnapshot snap = await coll
-      .where(fieldName, isEqualTo: filedValue) //condition
-      .get();
-
-  List<String> docsIDs = [];
-  final List<DocumentSnapshot> documentsFound = snap.docs;
-  for (var doc in documentsFound) {
-    docsIDs.add(doc.id);
-  }
-  print('## docs has [$fieldName=$filedValue] =>$docsIDs');
-
-  return docsIDs;
-}
-
-Future<List<DocumentSnapshot>> getDocumentsByColl(CollectionReference coll) async {
-  List<DocumentSnapshot> documentsFound =[];
-
-  try{
-    QuerySnapshot snap = await coll.get();
-    documentsFound = snap.docs; //return QueryDocumentSnapshot .data() to convert to json// or "userDoc.get('email')" for each field
-  }catch(err){
-    print('## Failed to get docs in coll<${coll.path}>: $err');
-    throw Exception('## Exception ');
-  }
-  return documentsFound;
-}
-
-/// ////////////////// Get & Set 1 Field in FB //////////////////////////////////////////////////////////////////////////////////////////////////
 Future<void> updateFieldInFirestore( //use aawait with it
- CollectionReference coll,
+    CollectionReference coll,
     String docId,
     String fieldName,
     dynamic fieldValue, {
@@ -344,101 +377,23 @@ Future<void> updateFieldInFirestore( //use aawait with it
     if (addSuccess != null) addSuccess();
   } catch (error) {
     print('## Error updating field <${coll.path}/$docId/$fieldName> = <$fieldValue>  ///ERROR : $error ///');
-    throw Exception('## Exception ');
+    throw Exception('## Exception updateFieldInFirestore');
 
   }
 
 }
 
-Future<dynamic> getFieldFromFirestore( CollectionReference coll, String docId, String fieldName) async {
-  try {
-    DocumentSnapshot snapshot = await coll.doc(docId).get();
-    if (snapshot.exists) {
-      dynamic docMap = snapshot.data() as Map<String, dynamic>;
-      dynamic fieldValue = docMap[fieldName];
 
-      if (fieldValue is int) {
-        return fieldValue.toDouble(); // Convert int to double
-      } else {
-        return fieldValue;
-      }
-    } else {
-      print('## Document not found <${coll.path}/$docId>');
-      return null;
-    }
-  } catch (error) {
-    print('## Error retrieving field <${coll.path}/$docId/$fieldName> : $error');
-    throw Exception('## Exception ');
+/// ************************* DELETE **************************************************
 
+
+clearCollection(CollectionReference coll) async {
+  var snapshots = await coll.get();
+  for (var doc in snapshots.docs) {
+    print('# delete doc<${doc.id}>');
+    await doc.reference.delete();
   }
 }
-
-/// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Future<List<T>> getAlldocsModelsFromFb<T>( CollectionReference coll, T Function(Map<String, dynamic>) fromJson,) async {
-  List<T> models = [];
-
-  try {
-
-
-    List<DocumentSnapshot> docs = await getDocumentsByColl(coll);
-    for (var doc in docs) {
-      T model = fromJson(doc.data() as Map<String, dynamic>);
-      models.add(model);
-    }
-    print('## fetched (${models.length}) models; from collection <${coll.path}>');
-
-  } catch (e) {
-    print('## Error fetching models: $e');
-  }
-  return models;
-
-
-
-
-}
-
-Future<List<DocumentSnapshot>> getDocumentsByIDs(
-  CollectionReference coll, {
-  List<String> IDs = const [],
-}) async {
-  // List userStoresIDs = authCtr.cUser.stores!;
-  List userStoresIDs = [];
-  QuerySnapshot snap = (IDs != [] ? await coll.where('id', whereIn: IDs).get() : await coll.get());
-
-  final documentsMap = snap.docs;
-
-  print('## collection:<${coll.path}> docs length =(${documentsMap.length})');
-
-  return documentsMap;
-}
-
-Future<bool> checkDocExist(String docID, coll) async {
-  var docSnapshot = await coll.doc(docID).get();
-
-  if (docSnapshot.exists) {
-    print('## docs with id=<$docID> exists');
-  } else {
-    print('## docs with <id=$docID> NOT exists');
-  }
-  return docSnapshot.exists;
-}
-
-/// Check If Document Exists
-Future<bool> checkIfDocExists(String collName, String docId) async {
-  try {
-    // Get reference to Firestore collection
-    var collectionRef = FirebaseFirestore.instance.collection(collName);
-    var doc = await collectionRef.doc(docId).get();
-    return doc.exists;
-  } catch (e) {
-    throw e;
-  }
-}
-
-
-
-
 
 Future<void> deleteDoc({Function()? success, required String docID,required CollectionReference coll})async {
   //if docID doesnt exist it will success to remove
@@ -455,111 +410,9 @@ Future<void> deleteDoc({Function()? success, required String docID,required Coll
 
 }
 
-deleteUserFromAuth(email, pwd) async {
-  // sign in with user auth to delete
-  await fAuth.signInWithEmailAndPassword(
-    email: email,
-    password: pwd,
-  ).then((value) async {
-    print('## account: <${fAuthcUser!.email}> deleted');
-    //delete current  user
-    fAuthcUser!.delete();
-    //admin signIn again
-    await fAuth.signInWithEmailAndPassword(
-      email: "authCtr.cUser.email!",
-      password: "authCtr.cUser.pwd!",
-    );
-    print('## admin: <${fAuthcUser!.email}> reSigned in');
-  });
-}
+/// ************************* DOCUMENT MAP OPERATIONs **************************************************
 
-acceptUser(String userID, coll) {
-  coll.doc(userID).get().then((DocumentSnapshot documentSnapshot) async {
-    if (documentSnapshot.exists) {
-      await coll.doc(userID).update({
-        'accepted': true, // turn verified to true in  db
-      }).then((value) async {
-        //addFirstServer(userID);
-        print('## user request accepted');
-        showGetXSnackBar('doctor request accepted'.tr);
-      }).catchError((error) async {
-        print('## user request accepted accepting error =${error}');
-        //toastShow('user request accepted accepting error');
-      });
-    }
-  });
-}
-
-changeUserName(newName, coll) async {
-  await coll.doc(ccUser.id).get().then((DocumentSnapshot documentSnapshot) async {
-    if (documentSnapshot.exists) {
-      await coll.doc(ccUser.id).update({
-        'name': newName, // turn verified to true in  db
-      }).then((value) async {
-        showGetXSnackBar('name updated'.tr);
-        //refreshUser(currentUser.email);
-        //Get.back();//cz it in dialog
-      }).catchError((error) async {
-        //print('## user request accepted accepting error =${error}');
-        //toastShow('user request accepted accepting error');
-      });
-    }
-  });
-}
-
-changeUserEmail(newEmail, coll) async {
-  User? user = fAuth.currentUser;
-  if (user != null) {
-    try {
-      // Change email
-      await user.updateEmail(newEmail).then((value) {
-        coll.doc(ccUser.id).get().then((DocumentSnapshot documentSnapshot) async {
-          if (documentSnapshot.exists) {
-            await coll.doc(ccUser.id).update({
-              'email': newEmail, // turn verified to true in  db
-            }).then((value) async {
-              print('## email firestore updated');
-              showGetXSnackBar('email updated');
-              //refreshUser(_emailController.text);
-            }).catchError((error) async {});
-          }
-        });
-      });
-    } catch (e) {
-      showGetXSnackBar('This operation is sensitive and requires recent authentication.\n Log in again before retrying this request',);
-      print('## Failed 4to update email:===> $e');
-    }
-  }
-}
-
-changeUserPassword(newPassword, coll) async {
-  User? user = fAuth.currentUser;
-
-  if (user != null) {
-    try {
-      // Change password
-      await user.updatePassword(newPassword).then((value) {
-        coll.doc(ccUser.id).get().then((DocumentSnapshot documentSnapshot) async {
-          if (documentSnapshot.exists) {
-            await coll.doc(ccUser.id).update({
-              'pwd': newPassword, // turn verified to true in  db
-            }).then((value) async {
-              showGetXSnackBar('password updated');
-              //refreshUser(currentUser.email);
-            }).catchError((error) async {});
-          }
-        });
-      });
-    } catch (e) {
-      showGetXSnackBar('This operation is sensitive and requires recent authentication.\n Log in again before retrying this request',
-      );
-
-      print('## Failed to update password:===> $e');
-    }
-  }
-}
-
- deleteFromMap({coll, docID, fieldMapName, String mapKeyToDelete ='', bool withBackDialog = false, String targetInvID ='', Function()? addSuccess,}) {
+deleteFromMap({coll, docID, fieldMapName, String mapKeyToDelete ='', bool withBackDialog = false, String targetInvID ='', Function()? addSuccess,}) {
 
   //we need either targetInvID or mapKeyToDelete to delete item from map
   print('## try deleting map in ${coll}/$docID/$fieldMapName/$mapKeyToDelete');
@@ -649,8 +502,6 @@ Map<String, dynamic>  deleteFromMapLocal({mapInitial, String mapKeyToDelete ='',
   return fieldMap;
 }
 
-
-
 Future<void> addToMap({coll, docID, fieldMapName, mapToAdd, Function()? addSuccess, bool withBackDialog = false}) async{
   coll.doc(docID).get().then((DocumentSnapshot documentSnapshot) async {
     if (documentSnapshot.exists) {
@@ -677,6 +528,223 @@ Future<void> addToMap({coll, docID, fieldMapName, mapToAdd, Function()? addSucce
   });
 }
 
+
+
+/// ************************* DOCUMENT LIST OPERATIONs **************************************************
+Future<void> addElementsToList(List newElements, String fieldName, String docID, CollectionReference coll, {bool canAddExistingElements = true}) async {
+  print('## start adding list <$newElements> TO <$fieldName>_<$docID>_<${coll.path}>');
+
+
+  coll.doc(docID).get().then((DocumentSnapshot documentSnapshot) async {
+    if (documentSnapshot.exists) {
+      // export existing elements
+      List<dynamic> oldElements = documentSnapshot.get(fieldName);
+      print('## oldElements: $oldElements');
+      // element to add
+      List<dynamic> elementsToAdd = [];
+      if (canAddExistingElements) {
+        elementsToAdd = newElements;
+      } else {
+        for (var element in newElements) {
+          if (!oldElements.contains(element)) {
+            elementsToAdd.add(element);
+          }
+        }
+      }
+
+      print('## elementsToAdd: $elementsToAdd');
+      // add element
+      List<dynamic> newElementList = oldElements + elementsToAdd;
+      print('## newElementListMerged: $newElementList');
+
+      //save elements
+      await coll.doc(docID).update(
+        {
+          fieldName: newElementList,
+        },
+      ).then((value) async {
+        print('## successfully added list <$elementsToAdd> TO <$fieldName>_<$docID>_<${coll.path}>');
+      }).catchError((error) async {
+        print('## failure to add list <$elementsToAdd> TO <$fieldName>_<$docID>_<${coll.path}>');
+      });
+    } else if (!documentSnapshot.exists) {
+      print('## docID not existing');
+    }
+  });
+}
+
+Future<void> removeElementsFromList(List elements, String fieldName, String docID, String collName) async {
+  print('## start deleting list <$elements>_<$fieldName>_$docID>_<$collName>');
+
+  CollectionReference coll = FirebaseFirestore.instance.collection(collName);
+
+  coll.doc(docID).get().then((DocumentSnapshot documentSnapshot) async {
+    if (documentSnapshot.exists) {
+      // export existing elements
+      List<dynamic> oldElements = documentSnapshot.get(fieldName);
+      print('## oldElements:(before delete) $oldElements');
+
+      // remove elements from oldElements
+      List<dynamic> elementsRemoved = [];
+
+      for (var element in elements) {
+        if (oldElements.contains(element)) {
+          oldElements.removeWhere((e) => e == element);
+          elementsRemoved.add(element);
+          //print('# removed <$element> from <$oldElements>');
+        }
+      }
+
+      print('## oldElements:(after delete) $oldElements');
+      await coll.doc(docID).update(
+        {
+          fieldName: oldElements,
+        },
+      ).then((value) async {
+        print('## successfully deleted list <$elementsRemoved> FROM <$fieldName>_<$docID>_<$collName>');
+      }).catchError((error) async {
+        print('## failure to delete list <$elementsRemoved> FROM  <$fieldName>_<$docID>_<$collName>');
+      });
+    } else if (!documentSnapshot.exists) {
+      print('## docID not existing');
+    }
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/// ********************* USER *************************************
+
+acceptUser(String userID, coll) {
+  coll.doc(userID).get().then((DocumentSnapshot documentSnapshot) async {
+    if (documentSnapshot.exists) {
+      await coll.doc(userID).update({
+        'accepted': true, // turn verified to true in  db
+      }).then((value) async {
+        //addFirstServer(userID);
+        print('## user request accepted');
+        showGetXSnackBar('doctor request accepted'.tr);
+      }).catchError((error) async {
+        print('## user request accepted accepting error =${error}');
+        //toastShow('user request accepted accepting error');
+      });
+    }
+  });
+}
+
+changeUserName(newName, coll) async {
+  await coll.doc(ccUser.id).get().then((DocumentSnapshot documentSnapshot) async {
+    if (documentSnapshot.exists) {
+      await coll.doc(ccUser.id).update({
+        'name': newName, // turn verified to true in  db
+      }).then((value) async {
+        showGetXSnackBar('name updated'.tr);
+        //refreshUser(currentUser.email);
+        //Get.back();//cz it in dialog
+      }).catchError((error) async {
+        //print('## user request accepted accepting error =${error}');
+        //toastShow('user request accepted accepting error');
+      });
+    }
+  });
+}
+
+changeUserEmail(newEmail, coll) async {
+  User? user = fAuth.currentUser;
+  if (user != null) {
+    try {
+      // Change email
+      await user.updateEmail(newEmail).then((value) {
+        coll.doc(ccUser.id).get().then((DocumentSnapshot documentSnapshot) async {
+          if (documentSnapshot.exists) {
+            await coll.doc(ccUser.id).update({
+              'email': newEmail, // turn verified to true in  db
+            }).then((value) async {
+              print('## email firestore updated');
+              showGetXSnackBar('email updated');
+              //refreshUser(_emailController.text);
+            }).catchError((error) async {});
+          }
+        });
+      });
+    } catch (e) {
+      showGetXSnackBar('This operation is sensitive and requires recent authentication.\n Log in again before retrying this request',);
+      print('## Failed 4to update email:===> $e');
+    }
+  }
+}
+
+changeUserPassword(newPassword, coll) async {
+  User? user = fAuth.currentUser;
+
+  if (user != null) {
+    try {
+      // Change password
+      await user.updatePassword(newPassword).then((value) {
+        coll.doc(ccUser.id).get().then((DocumentSnapshot documentSnapshot) async {
+          if (documentSnapshot.exists) {
+            await coll.doc(ccUser.id).update({
+              'pwd': newPassword, // turn verified to true in  db
+            }).then((value) async {
+              showGetXSnackBar('password updated');
+              //refreshUser(currentUser.email);
+            }).catchError((error) async {});
+          }
+        });
+      });
+    } catch (e) {
+      showGetXSnackBar('This operation is sensitive and requires recent authentication.\n Log in again before retrying this request',
+      );
+
+      print('## Failed to update password:===> $e');
+    }
+  }
+}
+
+deleteUserFromAuth(email, pwd) async {
+  // sign in with user auth to delete
+  await fAuth.signInWithEmailAndPassword(
+    email: email,
+    password: pwd,
+  ).then((value) async {
+    print('## account: <${fAuthcUser!.email}> deleted');
+    //delete current  user
+    fAuthcUser!.delete();
+    //admin signIn again
+    await fAuth.signInWithEmailAndPassword(
+      email: "authCtr.cUser.email!",
+      password: "authCtr.cUser.pwd!",
+    );
+    print('## admin: <${fAuthcUser!.email}> reSigned in');
+  });
+}
+
+/// *********************** OTHER
+
+Future<bool> checkIfDocExists(String collName, String docId) async {
+  try {
+    // Get reference to Firestore collection
+    var collectionRef = FirebaseFirestore.instance.collection(collName);
+    var doc = await collectionRef.doc(docId).get();
+    return doc.exists;
+  } catch (e) {
+    throw e;
+  }
+}
 
 
 /// //////////////////////////////////////// MANUAL CHNAGES TEST ////////////////////////////////////////////
@@ -722,65 +790,112 @@ Future<void> removeFieldFromAllDocs() async {
   }
 }
 
-// rarely used ******
+//add randoms
+/*
+Future<void> addRandomUsers(int numberOfUsers) async {
+  final faker = fkr.Faker();
+  final Random random = Random();
+  // final geo = GeoFlutterFire();
 
-Future<void> addDocument(
-    {required fieldsMap,
-      required CollectionReference coll ,
-      bool addIDField = true,
-      String specificID = '',
-      bool addRealTime = false,
-      String docPathRealtime = '',
-      Map<String, dynamic>? realtimeMap}) async {
+  List<String> randomImageUrls = [
+    'https://randomuser.me/api/portraits/men/1.jpg',
+    'https://randomuser.me/api/portraits/men/2.jpg',
+    'https://randomuser.me/api/portraits/men/3.jpg',
+    'https://randomuser.me/api/portraits/men/4.jpg',
+    'https://randomuser.me/api/portraits/men/5.jpg',
+    'https://randomuser.me/api/portraits/men/6.jpg',
+    'https://randomuser.me/api/portraits/men/7.jpg',
+    'https://randomuser.me/api/portraits/men/8.jpg',
+    'https://randomuser.me/api/portraits/men/9.jpg',
+    'https://randomuser.me/api/portraits/men/10.jpg',
+    'https://randomuser.me/api/portraits/women/1.jpg',
+    'https://randomuser.me/api/portraits/women/2.jpg',
+    'https://randomuser.me/api/portraits/women/3.jpg',
+    'https://randomuser.me/api/portraits/women/4.jpg',
+    'https://randomuser.me/api/portraits/women/5.jpg',
+    'https://randomuser.me/api/portraits/women/6.jpg',
+    'https://randomuser.me/api/portraits/women/7.jpg',
+    'https://randomuser.me/api/portraits/women/8.jpg',
+    'https://randomuser.me/api/portraits/women/9.jpg',
+    'https://randomuser.me/api/portraits/women/10.jpg',
+  ];
+
+  for (int i = 0; i < numberOfUsers; i++) {
+    double randomLatRandom = 20 + random.nextDouble() * (40 - 20); // Latitude range from 33 to 37
+    double randomLngRandom = 2 + random.nextDouble() * (20 - 2);   // Longitude range from 6 to 13
+
+    GeoFirePoint userPosition = GeoFirePoint(GeoPoint(randomLatRandom, randomLngRandom));
 
 
-  try{
-    if (specificID != '') {
-      coll.doc(specificID).set(fieldsMap).then((value) async {
-        print("## DOC ADDED TO <${coll.path}>");
 
-        //add id to doc
-        if (addIDField) {
-          //set id
-          coll.doc(specificID).update(
-            {
-              ///this
-              'id': specificID,
-            },
-            //SetOptions(merge: true),
-          );
-          if (addRealTime) {
-            DatabaseReference serverData = database!.ref(docPathRealtime);
-            await serverData.update({"$specificID": realtimeMap}).then((value) async {});
-          }
-        }
-      });
-    } else {
+    // Generate random data
+    String randomName = faker.person.name();
+    String randomEmail = faker.internet.email();
+    String randomGender = random.nextBool() ? 'Male' : 'Female';
+    int randomAge = random.nextInt(30) + 18; // Random age between 18 and 47
+    double randomLat = randomLatRandom;
+    double randomLng = randomLngRandom;
+    String randomPhone = faker.phoneNumber.us();
+    String randomCountry = faker.address.country();
+    String randomCity = faker.address.city();
+    String randomStreet = faker.address.streetName();
+    String randomZodiac = list_zodiac[random.nextInt(list_zodiac.length)];
 
-      coll.add(fieldsMap).then((value) async {
-        print("## DOC ADDED TO <${coll.path}>");
+    List<String> randomImages = List.generate(
+      random.nextInt(3) + 1,
+          (index) => randomImageUrls[random.nextInt(randomImageUrls.length)],
+    );
 
-        //add id to doc
-        if (addIDField) {
-          String docID = value.id;
-          //set id
-          coll.doc(docID).update(
-            {
-              ///this
-              'id': docID,
-            },
-            //SetOptions(merge: true),
-          );
-          if (addRealTime) {
-            DatabaseReference serverData = database!.ref(docPathRealtime);
-            await serverData.update({"$docID": realtimeMap}).then((value) async {});
-          }
-        }
-      });
-    }
-  }catch(e){
-    print("## Failed to add doc to <${coll.path}>: $e");
-    throw Exception();
+    OtherInfo randomOtherInfo = OtherInfo(
+      about: faker.lorem.sentence(),
+      jobTitle: faker.job.title(),
+      schoolUniv: faker.company.name(),
+      zodiac: [randomZodiac],
+      relationshipGoals: [relationshipGoal.value],
+      personalityType: [list_personalityType[random.nextInt(list_personalityType.length)]],
+      hobbies: List.generate(3, (index) => list_hobbies[random.nextInt(list_hobbies.length)]),
+      languages: List.generate(2, (index) => list_languages[random.nextInt(list_languages.length)]),
+      interests: List.generate(3, (index) => list_interests[random.nextInt(list_interests.length)]),
+      educationLevels: [list_educationLevels[random.nextInt(list_educationLevels.length)]],
+      sleepingHabits: [list_sleepingHabits[random.nextInt(list_sleepingHabits.length)]],
+      pets: [list_pets[random.nextInt(list_pets.length)]],
+      dietaryPreferences: [list_dietaryPreferences[random.nextInt(list_dietaryPreferences.length)]],
+      socialMediaStatus: [list_socialMediaStatus[random.nextInt(list_socialMediaStatus.length)]],
+      smokingFrequency: [list_smokingFrequency[random.nextInt(list_smokingFrequency.length)]],
+      sports: List.generate(2, (index) => list_sports[random.nextInt(list_sports.length)]),
+      disabilities: List.generate(2, (index) => list_disabilities[random.nextInt(list_disabilities.length)]),
+    );
+    String specificID = Uuid().v1();
 
+    Map<String, dynamic> userInput = {
+
+      'id': specificID,
+      'name': randomName,
+      'email': randomEmail,
+      'gender': randomGender,
+      'age': randomAge,
+      // 'lat': randomLat,
+      //'lng': randomLng,
+      'position': userPosition.data,
+
+      'phone': randomPhone,
+      'country': randomCountry,
+      'city': randomCity,
+      'street': randomStreet,
+      'images': randomImages,
+      'signUpInfoCompleted': false,
+      'signUpPicsCompleted': false,
+      'joinDetailsTime': DateTime.now().toUtc().toIso8601String(),
+      'otherInfo': randomOtherInfo.toJson(),
+    };
+
+    // Add to Firestore
+    await usersColl
+        .doc(specificID) // Replace 'specificId' with your desired document ID
+        .set(userInput);
   }
 }
+
+*/
+
+///
