@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:onisan/components/loading/loadingCtr.dart';
+import 'package:onisan/onisan.dart';
 
 import '../backend/pagination/paginationCtr.dart';
 import '../notif/notifCtr.dart';
@@ -13,5 +14,13 @@ class OnisanBinding implements Bindings {
 
     //settings ctr in main prj
 
+  }
+}
+
+class CombinedBinding implements Bindings {
+  @override
+  void dependencies() {
+    CustomVars.projectBindings; // prj bindings
+    OnisanBinding().dependencies(); // Onisan bindings
   }
 }

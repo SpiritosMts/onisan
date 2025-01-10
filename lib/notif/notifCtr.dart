@@ -25,7 +25,6 @@ import '../backend/firebaseVoids.dart';
 import '../components/dateAndTime/dateAndTime.dart';
 import '../refs/refs.dart';
 
-//in bindings.dart (initialize ctr)
 //in main.dart (initilize Fcm)
 //after verify user and get its data (get token)
 // in api & cre enable "cloud messaging"
@@ -52,7 +51,25 @@ import '../refs/refs.dart';
 //     }
 
 
+//TODO CALL OUTSIDE
+//stopNotifsListening() // to stop listening (in signOut ..)
+//startNotifsListening() // to start listening (in home init ..)
 
+/*
+///initilize notif in main.dart
+  if (!kIsWeb) {
+    //if mobile
+    await setupFlutterNotifications();
+  }else{
+    // add file "firebase-messaging-sw.js" to /web dir
+      FirebaseMessaging.instance.setAutoInitEnabled(true);
+
+  }
+
+  // Register the background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+ */
 class FirebaseMessagingCtr extends GetxController {
   ///************************* PROJECT_INFO ******************************************
 
@@ -66,7 +83,7 @@ class FirebaseMessagingCtr extends GetxController {
       return jsonDecode(await file.readAsString());
     } else {
       // Assuming the service account file is in the assets directory
-      final jsonString = await rootBundle.loadString(AssetsManager.filesServiceAccountPath);
+      final jsonString = await rootBundle.loadString(AssetsManager.filesServiceAccountPath!);
       final file = File(filePath);
       await file.writeAsString(jsonString);
       return jsonDecode(jsonString);
@@ -194,7 +211,7 @@ class FirebaseMessagingCtr extends GetxController {
 
 
     //todo select the coll to listen from
-    _notificationSubscription = notifsCollOf(ccUser.id).orderBy('creationTime', descending: true)
+    _notificationSubscription = notifsColl(userID: ccUser.id).orderBy('creationTime', descending: true)
         .where('creationTime', isGreaterThan: notifStartTime)
         .snapshots().listen((snapshot) {
       if (snapshot.docs.isEmpty) {
@@ -213,17 +230,7 @@ class FirebaseMessagingCtr extends GetxController {
     });
   }
 
-  Future<void> addNotificationToDb(NotifItem notification, {String? userId}) async {
-    // Reference to the user's notifications subcollection
-    CollectionReference notificationsRef = notifsCollOf(userId ?? ccUser.id);
 
-    // Add the notification to the subcollection
-    await notificationsRef.doc(notification.id).set(notification.toJson()).then((_) {
-      //print('## Notification added successfully');
-    }).catchError((error) {
-      //print('## Failed to add notification: $error');
-    });
-  }
 
   ///***********************************************************************************************************************
   ///************************************************ Firebase Device send notification   *******************************************************************************
@@ -232,11 +239,12 @@ class FirebaseMessagingCtr extends GetxController {
   ///******************************************  firebase function deplayed  *************************************************************************************
 
 
+  // *******************************  SEND WITH FUNCTIONS ********************************************************
 
   Future<void> sendNotifFbFunc(NotifItem notif, {bool addToDb = false, List<String> targetIDs = const []}) async {
     // targetIDs List of userIDs , if empty=send to all
     try {
-      final exampleMessage = {
+      final _exampleMessage = {
         "message": {
           "token": "àçjsrt;qetjè)qetgjàerç=",
           "notification": {
@@ -245,8 +253,8 @@ class FirebaseMessagingCtr extends GetxController {
             "image": "Url**",
           },
           "data": {
-           // ...dataPayload, // dataPayload items are in data- access with message.data['obj'] -
-           // "notifId": notifId,//fixed
+           /// ...dataPayload, // dataPayload items are in data- access with message.data['obj'] -
+            "notifId": "notifId**",//fixed
           },
         }
       };
@@ -278,7 +286,92 @@ class FirebaseMessagingCtr extends GetxController {
     }
   }
 
-  
+
+
+
+  // *******************************  SEND IN APP ********************************************************
+  Future<void> sendNotifApp({required String receiverToken, required String title, required String body, String imageUrl = '', Map<String, dynamic> data = const {},String? notifId,}) async {
+    try {
+      if(receiverToken.isEmpty) {
+        //print("## no device token , pushing notif denied");
+        return;
+      }
+      final serviceAccount = await _loadServiceAccount();
+      final authClient = await _getAuthClient(serviceAccount);
+      String specificID = Uuid().v1();
+
+      final url = 'https://fcm.googleapis.com/v1/projects/${CustomVars.firebaseProjectId}/messages:send';
+
+
+
+      final message = {
+        "message": {
+          "token": receiverToken,
+          "notification": {
+            "title": title,
+            "body": body,
+            "image": imageUrl,
+          },
+          "data": {
+            ...data,
+            "notifId": notifId??specificID,
+            "message": body,//remove
+          },
+        }
+      };
+      //print('## FCM request for device sent! - Request : ${message}');
+
+      final response = await authClient.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(message),
+      );
+      // print('## Response body: ${response.body}');
+      print('## ## deviceToken: ${receiverToken}');
+
+      if (response.statusCode == 200) {
+        print('## FCM SENT succ Response body: ${response.body}');
+      } else {
+        print('## Request failed with status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('## Error sending FCM message: $e');
+    }
+  }
+
+  Future<void> sendNotifToUsers({ required List users,required NotifItem notif, bool addToDb = false})async{
+    for (var user in users) {
+      // Send push notification to the user
+      sendNotifApp(
+        receiverToken: user.deviceToken, // Use user's device token
+        title: notif.title,
+        body: notif.body,
+        imageUrl: notif.imageUrl,
+        notifId: notif.id,
+        data: notif.dataPayload,
+      );
+
+      // Optionally add notification to Firestore DB for each user
+      if (addToDb) {
+        addNotificationToDb( notif,userId: user.id,);
+      }
+    }
+  }
+
+  // *******************************  ADD TO FIRESTORE ********************************************************
+
+  Future<void> addNotificationToDb(NotifItem notification, {String? userId}) async {
+    // Reference to the user's notifications subcollection
+    CollectionReference notificationsRef = notifsColl(userID: userId ?? ccUser.id);
+
+    // Add the notification to the subcollection
+    await notificationsRef.doc(notification.id).set(notification.toJson()).then((_) {
+      //print('## Notification added successfully');
+    }).catchError((error) {
+      //print('## Failed to add notification: $error');
+    });
+  }
+
   void testSendNotifFunc() {
     String specificID = Uuid().v1();
     NotifItem _notifExample = NotifItem(

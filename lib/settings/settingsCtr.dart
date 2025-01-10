@@ -1,10 +1,27 @@
+import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:onisan/onisan.dart';
 
 
 
-
+Map<String, String> languageNames = {
+  'en': 'English',
+  'fr': 'French',
+  'es': 'Spanish',
+  'de': 'German',
+  'it': 'Italian',
+  'pt': 'Portuguese',
+  'ru': 'Russian',
+  'zh': 'Chinese',
+  'ja': 'Japanese',
+  'ar': 'Arabic',
+  'ko': 'Korean',
+  'hi': 'Hindi',
+  'tr': 'Turkish',
+  'nl': 'Dutch',
+  'pl': 'Polish',
+};
 class SettingsCtr extends GetxController {
 
 
@@ -30,12 +47,12 @@ class SettingsCtr extends GetxController {
     super.onClose();
   }
 
-
   /// ***************** LANGUAGE ****************************
 
   var selectedLanguage = (Get.locale?.languageCode ?? 'en').obs;
 
   String? get currLang => selectedLanguage.value; //'en' , 'fr' ...
+  Locale get initLang => Locale(PreferencesService.prefs.getString('selected_lang') ?? 'en');
 
   void changeLanguage(String codeLang) {
     selectedLanguage.value = codeLang; // Update the selected language
@@ -44,6 +61,27 @@ class SettingsCtr extends GetxController {
     Locale locale = Locale(codeLang);
     Get.updateLocale(locale);
     print('## changed lang to => <${currLang}>');
+  }
+  String getCurrentLanguageName() {
+    Map<String, String> languageMap = {
+      'en': 'English',
+      'fr': 'French',
+      'es': 'Spanish',
+      'de': 'German',
+      'it': 'Italian',
+      'pt': 'Portuguese',
+      'ru': 'Russian',
+      'zh': 'Chinese',
+      'ja': 'Japanese',
+      'ar': 'Arabic',
+      'ko': 'Korean',
+      'hi': 'Hindi',
+      'tr': 'Turkish',
+      'nl': 'Dutch',
+      'pl': 'Polish',
+    };
+
+    return languageMap[currLang] ?? 'Unknown';
   }
 
 
@@ -139,6 +177,34 @@ class SettingsCtr extends GetxController {
   }
 
 
+  switchNotif(bool enable) async {
+    if(enable){
+      bool access = await requestNotificationsPermission();
+      if(access){
+        settingCtr.saveNotifSetting(true);
+
+      }else{
+        showBottomSheetDialog(
+            title: "Notification Permission",
+            description: "Notifications are disabled. Please enable them from app settings to receive updates.",
+            positiveButtonText: "open settings",
+            onPositivePressed: () {
+              //openAppSettings();
+              AppSettings.openAppSettings(type: AppSettingsType.notification);
+
+              //TODO when the user return to app not with timer
+
+              // Future.delayed(Duration(seconds: 2), () {
+              //   checkNotificationPermission();
+              // });
+            }
+        );
+      }
+    }else{
+      settingCtr.saveNotifSetting(false);
+
+    }
+  }
   void applyNotifSetting(bool isEnabled) {
     if (isEnabled) {
       // Enable notifications logic here

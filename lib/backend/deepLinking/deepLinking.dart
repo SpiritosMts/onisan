@@ -9,7 +9,7 @@ import 'package:share_plus/share_plus.dart';
 
 import 'deepLinkConfig.dart';
 Uri? pendingDeepLink;
-DeepLinkConfig get dlConfig => CustomVars.deepLinkConfig;
+DeepLinkConfig? get dlConfig => CustomVars.deepLinkConfig;
 
 void initDynamicLinks() async {
 
@@ -32,7 +32,7 @@ void initDynamicLinks() async {
 void savePendingLink(Uri deepLink) {
   print('## Received and saved Deep Link: $deepLink');
   pendingDeepLink = deepLink;
-  if (dlConfig.homeAccessible) {
+  if (dlConfig!.homeAccessible) {
     checkAndNavigatePendingLink();
   }
 }
@@ -43,7 +43,7 @@ void checkAndNavigatePendingLink() {
     final Uri deepLink = pendingDeepLink!;
     final path = deepLink.path;
 
-    if (path.startsWith('/${dlConfig.tagetName}')) { //
+    if (path.startsWith('/${dlConfig!.tagetName}')) { //
       final targetId = deepLink.queryParameters['id'];
       print('## Handle Deep Link Target id= <${targetId}>');
       if (targetId != null && targetId.isNotEmpty) {
@@ -62,23 +62,23 @@ void checkAndNavigatePendingLink() {
 
 Future<String> createDynamicLink(String id) async {
 
-  String dlPath = '${dlConfig.appUrl}/${dlConfig.tagetName}?id=$id';
+  String dlPath = '${dlConfig!.appUrl}/${dlConfig!.tagetName}?id=$id';
 
   final DynamicLinkParameters parameters = DynamicLinkParameters(
     link: Uri.parse(dlPath),
-    uriPrefix: dlConfig.appUrl,
+    uriPrefix: dlConfig!.appUrl,
     androidParameters: AndroidParameters(
-      packageName: dlConfig.androidPackageName,
+      packageName: dlConfig!.androidPackageName,
       minimumVersion: 1,
     ),
     iosParameters: IOSParameters(
-      bundleId: dlConfig.iosBundleId,
-      appStoreId: dlConfig.appStoreId,
+      bundleId: dlConfig!.iosBundleId,
+      appStoreId: dlConfig!.appStoreId,
     ),
     socialMetaTagParameters: SocialMetaTagParameters(
-      title: dlConfig.dynamicLinkTitle,
-      description: dlConfig.dynamicLinkDesc,
-      imageUrl: Uri.parse(dlConfig.appFeatureGraphic),
+      title: dlConfig!.dynamicLinkTitle,
+      description: dlConfig!.dynamicLinkDesc,
+      imageUrl: Uri.parse(dlConfig!.appFeatureGraphic),
     ),
   );
 
@@ -94,7 +94,7 @@ Future<String> createDynamicLink(String id) async {
 void shareLink(String linkToShare) async {
 
   try {
-    await Share.share('${dlConfig.sharePreviewMsg.tr}: $linkToShare');
+    await Share.share('${dlConfig!.sharePreviewMsg.tr}: $linkToShare');
     print("## ✔️ link shared ($linkToShare)...");
 
   } catch (e) {

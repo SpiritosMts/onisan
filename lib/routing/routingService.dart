@@ -42,7 +42,7 @@ goTargetDetails(dynamic target){
     print("## goTargetDetails (target==null || target.id.isEmpty)");
     return;
   }
-  Get.toNamed('/${dlConfig.tagetName}/${target.id}', arguments: {'object': target});
+  Get.toNamed('/${dlConfig!.tagetName}/${target.id}', arguments: {'object': target});
 }
 
 
@@ -55,5 +55,5 @@ goTargetDetailsID(String id){
 
     return;
   }
-  Get.toNamed('/${dlConfig.tagetName}/${id}');
+  Get.toNamed('/${dlConfig!.tagetName}/${id}');
 }

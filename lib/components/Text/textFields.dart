@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-fieldFocusChange(FocusNode currentFocus, FocusNode nextFocus) {
-  currentFocus.unfocus();
+fieldFocusChange( FocusNode nextFocus) {
+  fieldUnfocusAll();
   FocusScope.of(Get.context!).requestFocus(nextFocus);
 }
 fieldUnfocusAll() {

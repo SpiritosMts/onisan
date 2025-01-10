@@ -47,12 +47,15 @@ CollectionReference prDataColl = FirebaseFirestore.instance.collection('prData')
 CollectionReference usersColl = FirebaseFirestore.instance.collection('users');
 CollectionReference notificationsColl = FirebaseFirestore.instance.collection('notifications');
 
-CollectionReference notifsCollOf(String userID,{bool specificColl = false}) {
+CollectionReference notifsColl({String? userID,bool specificColl = true}) {
+
+  if(!specificColl) return notificationsColl;
+
+
   if (userID == null || userID.isEmpty) {
     throw ArgumentError('## UserID cannot be null or empty to get notifs');
   }
-  if(specificColl) return usersColl.doc(userID).collection('notifications');
-  return notificationsColl;
+   return usersColl.doc(userID).collection('notifications');
 }
 
 
@@ -103,6 +106,7 @@ dynamic get ccUser => CustomVars.getUser();
 class CustomVars {
   //collections names
   static late String usersCollName;
+  static late List<String> availableLangs;
 
 
   static late String monochromeNotifIcon;//"@drawable/logo_mono"
@@ -112,7 +116,7 @@ class CustomVars {
 
   static late FirebaseOptions firebaseOptions;
 
-  static late DeepLinkConfig deepLinkConfig;
+  static  DeepLinkConfig? deepLinkConfig;
   static late String vapidKeyNotif;
   static late String firebaseProjectId;
 
@@ -122,7 +126,8 @@ class CustomVars {
   static late Map<String, ColorPalette> paletteMap;
   static late ThemeData Function() getAppTheme;
   static late List<GetPage> routes; // Static list for storing app routes
-
+  // Binding function to call project-specific dependencies
+  static late void Function() projectBindings;
   // Reactive cUser in onisan
   static late dynamic Function() getUser;
   static void initializeUser({required dynamic Function() userGetter}) {
@@ -135,13 +140,17 @@ class CustomVars {
     required Map<String, ColorPalette> palettes,
     required ThemeData Function() themeGetter,
     required List<GetPage> appRoutes,
-    required DeepLinkConfig deepLinkCfg,
+     DeepLinkConfig? deepLinkCfg,
+    required void Function() cvProjectBindings, // Required project bindings
 
     required String cvVapidKeyNotif,
     required String cvFirebaseProjectId,
     required String cvMonochromeNotifIcon,
     required String cvNormalNotifIcon,
+     List<String> cvAvailableLangs= const ["en"],
   }) {
+    projectBindings = cvProjectBindings;
+    availableLangs = cvAvailableLangs;
     vapidKeyNotif = cvVapidKeyNotif;
     firebaseProjectId = cvFirebaseProjectId;
     monochromeNotifIcon = cvMonochromeNotifIcon;
@@ -177,7 +186,7 @@ class CustomVars {
     }
 
     print('- Deep Link Config:');
-    printJson(deepLinkConfig.toJson());
+    printJson(deepLinkConfig!.toJson());
 
 
     printGetUser();

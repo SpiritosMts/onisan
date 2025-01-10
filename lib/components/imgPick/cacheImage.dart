@@ -67,7 +67,7 @@ class ContentTypeCache {
 // Placeholder Logo
 Widget blankLogo(size) {
   return Image.asset(
-    AssetsManager.blankImagePath,
+    AssetsManager.blankImagePath!,
     width: size,
     height: size,
     fit: BoxFit.cover,
@@ -77,7 +77,7 @@ Widget blankLogo(size) {
 // Error Logo
 Widget errLogo(size) {
   return Image.asset(
-    AssetsManager.errImagePath,
+    AssetsManager.errImagePath!,
     width: size,
     height: size,
     fit: BoxFit.cover,

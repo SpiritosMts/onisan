@@ -8,9 +8,12 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:onisan/components/myTheme/themeManager.dart';
 
-
-
-Future<XFile?> showImageDialog({
+///CALL
+// List<XFile>? images = await showImageDialogMulti(
+// title: "Select an Image",
+// selectMulti: false, // Single image selection
+// );
+Future<List<XFile>?> showImageDialog({
   String title = "Choose source",
   String galleryText = "Gallery",
   String cameraText = "Camera",
@@ -19,75 +22,23 @@ Future<XFile?> showImageDialog({
   Color? iconColor,
   Color? bgColor,
   Color? textColor,
-}) async {
-  final ImagePicker _picker = ImagePicker();
-  print('## picking image ...');
-
-  Future<void> _selectImage(ImageSource source) async {
-    XFile? image = await _picker.pickImage(source: source);
-    if (image != null) {
-      print("## Image selected: ${image.name}");
-    } else {
-      print("## No image selected");
-    }
-    Get.back(result: image); ///+++ Pass the selected image RETURN
-  }
-
-  return await showDialog<XFile?>(
-    context: Get.context!,
-    builder: (_) {
-      return AlertDialog(
-        backgroundColor: bgColor ?? Cm.bgCol2,
-        title: Text(
-          title.tr,
-          style: TextStyle(color: textColor ?? Cm.textCol2),
-        ),
-        content: SingleChildScrollView(
-          child: ListBody(
-            children: [
-              const Divider(height: 1),
-              ListTile(
-                onTap: () => _selectImage(ImageSource.gallery),
-                title: Text(
-                  galleryText.tr,
-                  style: TextStyle(color: textColor ?? Cm.textCol2),
-                ),
-                leading: Icon(galleryIcon, color: iconColor ?? Cm.primaryColor),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                onTap: () => _selectImage(ImageSource.camera),
-                title: Text(
-                  cameraText.tr,
-                  style: TextStyle(color: textColor ?? Cm.textCol2),
-                ),
-                leading: Icon(cameraIcon, color: iconColor ?? Cm.primaryColor),
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-}
-Future<List<XFile>?> showImageDialogMulti({
-  String title = "Choose source",
-  String galleryText = "Gallery",
-  String cameraText = "Camera",
-  IconData galleryIcon = Icons.image,
-  IconData cameraIcon = Icons.camera,
-  Color? iconColor,
-  Color? bgColor,
-  Color? textColor,
+  bool selectMulti = false, // Parameter to choose multi-image or single-image selection
 }) async {
   final ImagePicker _picker = ImagePicker();
   List<XFile>? selectedImages;
 
   Future<void> _selectImages(ImageSource source) async {
     if (source == ImageSource.gallery) {
-      selectedImages = await _picker.pickMultiImage(); // Pick multiple images
+      if (selectMulti) {
+        selectedImages = await _picker.pickMultiImage(); // Pick multiple images if selectMulti is true
+      } else {
+        XFile? image = await _picker.pickImage(source: source); // Single image if selectMulti is false
+        if (image != null) {
+          selectedImages = [image]; // Wrap single image in a list
+        }
+      }
     } else if (source == ImageSource.camera) {
-      XFile? image = await _picker.pickImage(source: source);
+      XFile? image = await _picker.pickImage(source: source); // Always single image for camera
       if (image != null) {
         selectedImages = [image]; // Wrap single image in a list
       }
@@ -143,7 +94,7 @@ Future<List<XFile>?> showImageDialogMulti({
 
 //*************************************************************************************************
 
-Future<XFile?> pickImageBottom({
+Future<List<XFile>?> pickImagesBottom({
   String title = "Choose source",
   String galleryText = "Gallery",
   String cameraText = "Camera",
@@ -152,22 +103,41 @@ Future<XFile?> pickImageBottom({
   Color? iconColor,
   Color? bgColor,
   Color? textColor,
+  bool selectMulti = false, // Parameter to choose multi-image or single-image selection
+
 }) async {
   final ImagePicker _picker = ImagePicker();
   print('## picking image ...');
 
-  Completer<XFile?> completer = Completer<XFile?>();
 
-  Future<void> selectImage(ImageSource source) async {
-    XFile? image = await _picker.pickImage(source: source);
-    if (image != null) {
-      print("## Image selected: ${image.name}");
-      Get.back(); // Dismiss the bottom sheet
-      completer.complete(image); ///+++ Pass the selected image RETURN
-    } else {
-      print("## No image selected");
+  Completer<List<XFile>?> completer = Completer<List<XFile>?>();
+
+  Future<void> selectImages(ImageSource source) async {
+    List<XFile>? images;
+    if (source == ImageSource.gallery) {
+      if (selectMulti) {
+        images = await _picker.pickMultiImage(); // Multi-image selection for gallery
+      } else {
+        XFile? image = await _picker.pickImage(source: source); // Single-image selection for gallery
+        if (image != null) {
+          images = [image];
+        }
+      }
+    } else if (source == ImageSource.camera) {
+      XFile? image = await _picker.pickImage(source: source); // Single-image selection for camera
+      if (image != null) {
+        images = [image];
+      }
     }
 
+    if (images != null && images.isNotEmpty) {
+      print("## Images selected: ${images.map((img) => img.name).join(', ')}");
+      Get.back(); // Dismiss the bottom sheet
+      completer.complete(images); // Complete with the selected images
+    } else {
+      print("## No images selected");
+      completer.complete(null); // Complete with null if no images are selected
+    }
   }
 
   showModalBottomSheet<void>(
@@ -183,7 +153,7 @@ Future<XFile?> pickImageBottom({
                 galleryText.tr,
                 style: TextStyle(color: textColor ?? Cm.textCol2),
               ),
-              onTap: () => selectImage(ImageSource.gallery),
+              onTap: () => selectImages(ImageSource.gallery),
             ),
             ListTile(
               leading: Icon(cameraIcon, color: iconColor ?? Cm.primaryColor),
@@ -191,7 +161,7 @@ Future<XFile?> pickImageBottom({
                 cameraText.tr,
                 style: TextStyle(color: textColor ?? Cm.textCol2),
               ),
-              onTap: () => selectImage(ImageSource.camera),
+              onTap: () => selectImages(ImageSource.camera),
             ),
           ],
         ),

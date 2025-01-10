@@ -33,10 +33,10 @@ Future<String> getUserStoredId({bool useUuid = false,bool withEncrypt = false}) 
   }
 
   // Open a Hive box
-  final box = await Hive.openBox(boxName);
+  final box = await Hive.openBox(boxName);//"persistent_id_box"
   try {
     // Check if the ID exists
-    final storedId = box.get(idKey);
+    final storedId = box.get(idKey);//"persistent_id"
     if (storedId != null) {
       print("## stored ID found: $storedId");
 

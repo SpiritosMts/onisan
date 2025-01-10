@@ -1,9 +1,37 @@
+import 'package:feedback/feedback.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:onisan/components/Text/textFields.dart';
 import 'package:onisan/components/snackbar/topAnimated.dart';
 
 import 'package:sizer/sizer.dart';
+
+
+class FeedbackWidget extends StatelessWidget {
+  final Widget child;
+
+  const FeedbackWidget({Key? key, required this.child}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return BetterFeedback(
+      child: child,
+      pixelRatio: 2.0, // Default pixel ratio
+      theme: FeedbackThemeData(
+        bottomSheetTextInputStyle: const TextStyle(color: Colors.black),
+        bottomSheetDescriptionStyle: const TextStyle(color: Colors.black),
+        feedbackSheetHeight: 0.25,
+        sheetIsDraggable: true,
+      ),
+      feedbackBuilder: (context, onSubmit, controller) {
+        return FeedbackForm(onSubmit: onSubmit);
+      },
+    );
+  }
+}
+
+//********************************************************************************
+
 
 
 class FeedbackForm extends StatefulWidget {

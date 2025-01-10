@@ -88,3 +88,79 @@ class NotifItem {
     }
   }
 }
+
+//************************ tests *******************************************
+
+
+NotifItem generalNotif = NotifItem(
+  id: 'notif2',
+  title: 'Your subscription is about to expire',
+  topic: 'Subscription', // Updates, Social, Promotions
+
+  body: 'Renew your subscription to continue enjoying premium features.',
+  creationTime: DateTime.now().subtract(Duration(days: 3)).toIso8601String(),
+  priority: 'medium',// 'low', 'high'
+  senderId: '',
+  status: 'active',
+  imageUrl: 'https://i.pinimg.com/originals/95/df/52/95df5222365d97eeedf029f4858d48ed.jpg',
+  type: 'reminder',// update, promotion, social
+  read: false,
+);
+final List<NotifItem> notifications = [
+  NotifItem(
+    id: 'notif1',
+    title: 'Check out our new features!',
+    topic: 'Updates',
+    body: 'We’ve added some great new features that you’ll love. Come and explore now!',
+    type: 'update',
+
+    status: 'active',
+    creationTime: DateTime.now().subtract(Duration(hours: 10)).toIso8601String(),
+    priority: 'high',
+    senderId: 'system',
+    imageUrl: 'https://example.com/new_features.png',
+    read: false,
+  ),
+  NotifItem(
+    id: 'notif2',
+    title: 'Your subscription is about to expire',
+    topic: 'Subscription',
+    body: 'Renew your subscription to continue enjoying premium features.',
+    type: 'reminder',
+
+    status: 'active',
+    creationTime: DateTime.now().subtract(Duration(days: 3)).toIso8601String(),
+    priority: 'medium',
+    senderId: 'billing',
+    imageUrl: 'https://example.com/subscription.png',
+    read: false,
+  ),
+  NotifItem(
+    id: 'notif3',
+    title: 'New friend request',
+    topic: 'Social',
+    body: 'You have a new friend request from John Doe.',
+    type: 'social',
+
+    status: 'active',
+    creationTime: DateTime.now().subtract(Duration(hours: 2)).toIso8601String(),
+    priority: 'low',
+    senderId: 'john_doe',
+    imageUrl: 'https://example.com/friend_request.png',
+    read: false,
+  ),
+  NotifItem(
+    id: 'notif4',
+    title: 'Special offer just for you!',
+    topic: 'Promotions',
+    body: 'Get 50% off on your next purchase. Don’t miss out!',
+    type: 'promotion',
+
+    status: 'active',
+    creationTime: DateTime.now().subtract(Duration(days: 1)).toIso8601String(),
+    priority: 'high',
+    senderId: 'marketing',
+    imageUrl: 'https://example.com/special_offer.png',
+    read: false,
+  ),
+];

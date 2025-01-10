@@ -12,6 +12,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:onisan/onisan.dart';
 import 'package:path/path.dart' as path;
 
+
+CollectionReference  collRef(collName) => FirebaseFirestore.instance.collection(collName);
+
 /// ************************** INIT *************************************************
 
 Future<void> tryInitFirebase2() async {
@@ -124,7 +127,7 @@ Future<List<String>> uploadImagesToFirebase(
 
 
 
-Future<String> uploadFileToFirebase(File? pickedFile,String? storagePath) async {
+Future<String> uploadFileToFirebase(dynamic pickedFile,String? storagePath) async {
   String downloadUrl ="";
 
   if(pickedFile == null || storagePath == null){
@@ -133,7 +136,9 @@ Future<String> uploadFileToFirebase(File? pickedFile,String? storagePath) async 
   }
 
   try {
-    File file = File(pickedFile!.path);
+    // Convert XFile to File if necessary
+    File file = pickedFile is XFile ? File(pickedFile.path) : pickedFile;
+
     String fileName = path.basename(pickedFile.path);
 
     String firebasePath = '$storagePath/${DateTime.now().millisecondsSinceEpoch}-${fileName}';
@@ -164,30 +169,6 @@ Future<String> uploadFileToFirebase(File? pickedFile,String? storagePath) async 
 
 }
 
-/// upload one file to fb
-Future<String> uploadOneImgToFb( PickedFile? imageFile ,String filePath,) async {
-  if (imageFile != null) {
-    String fileName = path.basename(imageFile.path);
-    firebase_storage.Reference ref = firebase_storage.FirebaseStorage.instance.ref('/$filePath/$fileName');
-
-    File img = File(imageFile.path);
-
-    final metadata = firebase_storage.SettableMetadata(contentType: 'image/jpeg', customMetadata: {
-      // 'picked-file-path': 'picked000',
-      // 'uploaded_by': 'A bad guy',
-      // 'description': 'Some description...',
-    });
-    firebase_storage.UploadTask uploadTask = ref.putFile(img, metadata);
-
-    String url = await (await uploadTask).ref.getDownloadURL();
-    print('  ## uploaded image');
-
-    return url;
-  } else {
-    print('  ## cant upload null image');
-    return '';
-  }
-}
 
 /// ***************************  GET ************************************************
 
