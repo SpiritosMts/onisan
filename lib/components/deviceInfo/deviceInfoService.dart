@@ -71,8 +71,11 @@ class DeviceInfoService {
       throw UnsupportedError("## This function is only for Android");
     }
     final androidInfo = await _deviceInfoPlugin.androidInfo;
+
     return "${androidInfo.manufacturer}-${androidInfo.model}-${androidInfo.id}";
   }
+
+
   Future<String> generateIOSId() async {
     if (defaultTargetPlatform != TargetPlatform.iOS) {
       throw UnsupportedError("##This function is only for iOS");

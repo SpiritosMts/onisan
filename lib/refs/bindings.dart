@@ -20,7 +20,8 @@ class OnisanBinding implements Bindings {
 class CombinedBinding implements Bindings {
   @override
   void dependencies() {
-    CustomVars.projectBindings; // prj bindings
+    CustomVars.projectBindings(); // Call the project-specific bindings
     OnisanBinding().dependencies(); // Onisan bindings
+
   }
 }

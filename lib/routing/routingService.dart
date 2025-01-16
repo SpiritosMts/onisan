@@ -49,11 +49,29 @@ goTargetDetails(dynamic target){
 //if i only have the object id download it from database using taht id
 goTargetDetailsID(String id){
   if(id==null || id.isEmpty) {
-    animatedSnack(message: "Failed to open post");
-
+    animatedSnack(message: "Failed to open ${dlConfig!.tagetName}");
     print("## goTargetDetailsID (id==null || id.isEmpty)");
-
     return;
   }
   Get.toNamed('/${dlConfig!.tagetName}/${id}');
 }
+
+/// in postDetails
+/*
+  String? postId;
+  Post? postModel;
+
+  void initObjectData() {
+    postId = Get.parameters['id'];
+    postModel = Get.arguments?['object']; //if found model dont fetch
+  }
+    @override
+  void initState() {
+    super.initState();
+    initObjectData();
+    // Fetch post details based on postId
+    postCtr.fetchPostById(postId!, postModel: postModel);
+}
+
+
+* */

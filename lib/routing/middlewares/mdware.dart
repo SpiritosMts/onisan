@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:onisan/components/localStorage/prefs.dart';
+import 'package:onisan/refs/refs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 typedef ConditionCallback = bool Function();
 
 class GeneralMiddleware extends GetMiddleware {
   final bool active;
+  final bool usePrefsKeyAsCondition;
   final String? prefsKey;
   final ConditionCallback? condition;
   final String redirectRoute;
@@ -17,6 +20,7 @@ class GeneralMiddleware extends GetMiddleware {
   GeneralMiddleware({
     this.active = true,
     this.prefsKey,
+    this.usePrefsKeyAsCondition=true,
     this.condition,
     required this.redirectRoute,
     this.middlewarePriority,
@@ -30,8 +34,9 @@ class GeneralMiddleware extends GetMiddleware {
     if (!active) return null; // Middleware is disabled
 
     // Check cached preference if prefsKey is provided
-    if (prefsKey != null) {
-      final prefValue = _prefsCache[prefsKey] ?? false;
+    if (usePrefsKeyAsCondition && prefsKey != null) {
+      final prefValue = PreferencesService.prefs.getBool(prefsKey!) ?? false;
+      //final prefValue = _prefsCache[prefsKey] ?? PreferencesService.prefs.getBool(prefsKey!) ?? false;
       if (!prefValue) {
         return RouteSettings(name: redirectRoute);
       }

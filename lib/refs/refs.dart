@@ -78,23 +78,6 @@ class NavigatorService {
 }
 
 
-///************************** PreferencesService
-class PreferencesService {
-  static SharedPreferences? _prefs;
-
-  // Method to initialize SharedPreferences (lazy initialization)
-  static Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
-  }
-
-  // Getter to access SharedPreferences instance safely
-  static SharedPreferences get prefs {
-    if (_prefs == null) {
-      throw Exception("## SharedPreferences not initialized. Call PreferencesService.initialize() first.");
-    }
-    return _prefs!;
-  }
-}
 
 
 ///************************** CustomVars

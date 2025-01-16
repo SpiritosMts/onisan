@@ -1,7 +1,7 @@
-import 'package:app_settings/app_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:onisan/onisan.dart';
+import 'package:open_settings_plus/open_settings_plus.dart';
 
 
 
@@ -189,8 +189,17 @@ class SettingsCtr extends GetxController {
             description: "Notifications are disabled. Please enable them from app settings to receive updates.",
             positiveButtonText: "open settings",
             onPositivePressed: () {
-              //openAppSettings();
-              AppSettings.openAppSettings(type: AppSettingsType.notification);
+              switch (OpenSettingsPlus.shared) {
+                case OpenSettingsPlusAndroid settings:
+                  settings.appNotification();
+                  break;
+                case OpenSettingsPlusIOS settings:
+
+                  break;
+                default:
+                  throw Exception('Platform not supported');
+              }
+             // AppSettings.openAppSettings(type: AppSettingsType.notification); app_setting pckg
 
               //TODO when the user return to app not with timer
 

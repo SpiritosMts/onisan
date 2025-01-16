@@ -4,6 +4,28 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+///************************** PreferencesService
+class PreferencesService {
+  static SharedPreferences? _prefs;
+
+  // Method to initialize SharedPreferences (lazy initialization)
+  static Future<void> initialize() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
+  // Getter to access SharedPreferences instance safely
+  static SharedPreferences get prefs {
+    if (_prefs == null) {
+      throw Exception("## SharedPreferences not initialized. Call PreferencesService.initialize() first.");
+    }
+    return _prefs!;
+  }
+  static Future<void>  clearAllPreferences() async {
+
+    await _prefs!.clear();
+    print('## All preferences cleared.');
+  }
+}
 
 Future<bool> savePrefsList<T>(String key,String userId, List<T> list) async {
 
@@ -36,11 +58,6 @@ Future<List<T>> loadPrefsList<T>(String key,String userId, T Function(Map<String
   return loadedList;
 
 }
-Future<void> clearAllPreferences() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
 
-  await prefs.clear();
-  print('## All preferences cleared.');
-}
 
 
