@@ -75,6 +75,8 @@ String getWeekdayName(int weekdayIndex) {
       return '';
   }
 }
+
+
 String dateToString(DateTime date,{bool showDay = false, bool showHoursNminutes = false, bool showSeconds = true}) {
   //final formattedStr = formatDate(DateTime.now(), [dd, '/', mm, '/', yyyy, ' ', HH, ':' nn]);
   //DateFormat dateFormat = DateFormat("yyyy-MM-dd");
@@ -91,35 +93,48 @@ String dateToString(DateTime date,{bool showDay = false, bool showHoursNminutes 
   }
   return dateFormat.format(date);
 }
+
 String nowToUtc(){
   return DateTime.now().toUtc().toIso8601String();//stored in db
-
 }
 
-String fromUtc(String utcDate, {bool showDay = false, bool showHoursNminutes = true, bool showSeconds = false}) {
-  if(utcDate.isEmpty) return "";
 
-  DateTime _fromUtc = DateTime.parse(utcDate).toLocal();
-  DateFormat dateFormat;
-
-  if (showDay && showHoursNminutes && showSeconds) {
-    dateFormat = DateFormat("dd-MM-yyyy HH:mm:ss");
-  } else if (showDay && showHoursNminutes) {
-    dateFormat = DateFormat("dd-MM-yyyy HH:mm");
-  } else if (showDay) {
-    dateFormat = DateFormat("dd-MM-yyyy");
-  } else if (showHoursNminutes && showSeconds) {
-    dateFormat = DateFormat("HH:mm:ss");
-  } else if (showHoursNminutes) {
-    dateFormat = DateFormat("HH:mm");
-  } else if (showSeconds) {
-    dateFormat = DateFormat("ss");
-  } else {
-    dateFormat = DateFormat("yyyy-MM-dd");
+String fromUtc(String? utcDate, {bool showDay = false, bool showHoursNminutes = true, bool showSeconds = false}) {
+  // Handle null or empty input
+  if (utcDate == null || utcDate.isEmpty) {
+    return ""; // Return empty string as fallback
   }
 
-  return dateFormat.format(_fromUtc);
+  try {
+    // Parse UTC date and convert to local time
+    DateTime _fromUtc = DateTime.parse(utcDate).toLocal();
+    DateFormat dateFormat;
+
+    // Determine the date format based on flags
+    if (showDay && showHoursNminutes && showSeconds) {
+      dateFormat = DateFormat("dd-MM-yyyy HH:mm:ss");
+    } else if (showDay && showHoursNminutes) {
+      dateFormat = DateFormat("dd-MM-yyyy HH:mm");
+    } else if (showDay) {
+      dateFormat = DateFormat("dd-MM-yyyy");
+    } else if (showHoursNminutes && showSeconds) {
+      dateFormat = DateFormat("HH:mm:ss");
+    } else if (showHoursNminutes) {
+      dateFormat = DateFormat("HH:mm");
+    } else if (showSeconds) {
+      dateFormat = DateFormat("ss");
+    } else {
+      dateFormat = DateFormat("yyyy-MM-dd");
+    }
+
+    return dateFormat.format(_fromUtc);
+  } catch (e) {
+    // Handle parsing errors
+    print("Error parsing UTC date '$utcDate': $e");
+    return "Invalid Date"; // Fallback value for invalid dates
+  }
 }
+
 String fromUtcToLocal(String utcString) {
   // Parse the UTC string to a DateTime object
   DateTime utcDate = DateTime.parse(utcString);

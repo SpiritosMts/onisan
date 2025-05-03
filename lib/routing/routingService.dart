@@ -1,6 +1,3 @@
-
-
-
 import 'package:get/get.dart';
 import 'package:onisan/backend/deepLinking/deepLinking.dart';
 import 'package:onisan/components/snackbar/topAnimated.dart';
@@ -47,13 +44,40 @@ goTargetDetails(dynamic target){
 
 
 //if i only have the object id download it from database using taht id
-goTargetDetailsID(String id){
-  if(id==null || id.isEmpty) {
+
+void goTargetDetailsID(String? id) {
+  // Handle null or empty ID
+  if (id == null || id.isEmpty) {
     animatedSnack(message: "Failed to open ${dlConfig!.tagetName}");
     print("## goTargetDetailsID (id==null || id.isEmpty)");
     return;
   }
-  Get.toNamed('/${dlConfig!.tagetName}/${id}');
+
+  // Define the target route
+  final targetRoute = '/${dlConfig!.tagetName}/$id';
+
+  // Get the current route
+  final currentRoute = Get.currentRoute;
+
+  // Check if the current route is already a target details page
+  if (currentRoute.startsWith('/${dlConfig!.tagetName}/')) {
+    // Extract the current ID from the route
+    final currentId = currentRoute.split('/').last;
+
+    // If the new ID matches the current ID, do nothing
+    if (currentId == id) {
+      print("## Already on $targetRoute, no navigation needed");
+      return;
+    } else {
+      // Replace the current page with the new ID
+      Get.offNamed(targetRoute);
+      print("## Replaced current route with $targetRoute");
+    }
+  } else {
+    // If not currently on a target details page, navigate normally
+    Get.toNamed(targetRoute);
+    print("## Navigated to $targetRoute");
+  }
 }
 
 /// in postDetails

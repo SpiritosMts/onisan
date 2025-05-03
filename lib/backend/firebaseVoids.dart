@@ -171,29 +171,46 @@ Future<String> uploadFileToFirebase(dynamic pickedFile,String? storagePath) asyn
 
 
 /// ***************************  GET ************************************************
-
-Future<dynamic> getFieldFromFirestore( CollectionReference coll, String docId, String fieldName) async {
+Future<dynamic> getFieldFromFirestore(
+    CollectionReference coll,
+    String docId,
+    String fieldName,
+    ) async {
   try {
-    DocumentSnapshot snapshot = await coll.doc(docId).get();
-    if (snapshot.exists) {
-      dynamic docMap = snapshot.data() as Map<String, dynamic>;
-      dynamic fieldValue = docMap[fieldName];
+    // Debug: Print the Firestore path being accessed
+    print('## Fetching field <$fieldName> from path <${coll.path}/$docId>');
 
-      if (fieldValue is int) {
-        return fieldValue.toDouble(); // Convert int to double
+    // Get the document snapshot
+    DocumentSnapshot snapshot = await coll.doc(docId).get();
+
+    if (snapshot.exists && snapshot.data() != null) {
+      // Ensure snapshot data can be cast to a map
+      Map<String, dynamic> docMap = snapshot.data() as Map<String, dynamic>;
+
+      if (docMap.containsKey(fieldName)) {
+        // Safely retrieve the field value
+        dynamic fieldValue = docMap[fieldName];
+
+        if (fieldValue is int) {
+          return fieldValue.toDouble(); // Convert int to double
+        } else {
+          return fieldValue;
+        }
       } else {
-        return fieldValue;
+        print('## Field <$fieldName> not found in document <$docId>');
+        return null;
       }
     } else {
       print('## Document not found <${coll.path}/$docId>');
       return null;
     }
   } catch (error) {
-    print('## Error retrieving field <${coll.path}/$docId/$fieldName> : $error');
-    throw Exception('## Exception ');
-
+    print('## Error retrieving field <${coll.path}/$docId/$fieldName>: $error');
+    throw Exception('## Error retrieving field: $error'); // Provide specific error details
   }
 }
+
+
 
 Future<List<String>> getDocumentsIDsByFieldName(String fieldName, String filedValue, CollectionReference coll) async {
   QuerySnapshot snap = await coll
@@ -278,7 +295,9 @@ Future<void> addDocumentWithId({
 
   try {
     await coll.doc(docID).set(data);
-
+    Future.delayed(const Duration(milliseconds: 1000), ()  {});
+    // Add the 'id' field to the document
+    await coll.doc(docID).update({'id': docID});
     print("## ✔️ added doc with ID: <$docID> TO <${coll.path}>");
   } catch (e,s) {
     print("## ❌ Failed to add document: $e");
@@ -356,8 +375,8 @@ Future<void> updateFieldInFirestore( //use aawait with it
     });
     print('## Field updated successfully <${coll.path}/$docId/$fieldName> = <$fieldValue>');
     if (addSuccess != null) addSuccess();
-  } catch (error) {
-    print('## Error updating field <${coll.path}/$docId/$fieldName> = <$fieldValue>  ///ERROR : $error ///');
+  } catch (e) {
+    print('## Error updating field <${coll.path}/$docId/$fieldName> = <$fieldValue>  /ERROR : $e ///');
     throw Exception('## Exception updateFieldInFirestore');
 
   }

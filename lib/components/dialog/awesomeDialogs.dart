@@ -179,24 +179,56 @@ Future<bool> showNoHeader({String? txt,String? btnOkText='delete',Color btnOkCol
     dialogType: DialogType.noHeader,
     animType: AnimType.scale,
     btnCancelIcon: Icons.close,
-    btnCancelColor: Colors.grey,
-    btnOkIcon: icon ?? Icons.delete,
+    btnCancelColor: Cm.secondaryColor,
+    btnOkIcon: icon ?? Icons.check,
     btnOkColor: btnOkColor,
+    btnOk: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Cm.primaryColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(85),
+        ),
+      ),
+      onPressed: () {
+        Get.back();
+
+        shouldDelete = true;
+
+      },
+      child: Padding(
+        padding:  EdgeInsets.symmetric(horizontal: 15,vertical: 3),
+        child: Text(
+            btnOkText!.tr,
+          style: TextStyle(fontSize: 18,color: Cm.textColPr),
+        ),
+      ),
+    ),
+    btnCancel: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Cm.secondaryColor.withOpacity(0.6),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(85),
+        ),
+      ),
+      onPressed: () {
+        Get.back();
+        shouldDelete = false;
+
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 15,vertical: 3),
+        child: Text(
+          'cancel'.tr,
+          style: TextStyle(fontSize: 18,color: Cm.textColSe),
+        ),
+      ),
+    ),
     buttonsTextStyle: TextStyle(fontSize: 17.sp),
     padding: EdgeInsets.symmetric(vertical: 15,horizontal: 10),
     // texts
     title: 'Verification'.tr,
     desc: txt ?? 'Are you sure you want to delete this image'.tr,
-    btnCancelText: 'cancel'.tr,
-    btnOkText: btnOkText!.tr ,
 
-    // buttons functions
-    btnOkOnPress: () {
-      shouldDelete = true;
-    },
-    btnCancelOnPress: () {
-      shouldDelete = false;
-    },
 
 
 

@@ -60,12 +60,12 @@ Future<List<XFile>?> showImageDialog({
         backgroundColor: bgColor ?? Cm.bgCol2,
         title: Text(
           title.tr,
-          style: TextStyle(color: textColor ?? Cm.textCol2),
+          style: TextStyle(color: textColor ?? Cm.textCol2.withOpacity(0.9)),
         ),
         content: SingleChildScrollView(
           child: ListBody(
             children: [
-              const Divider(height: 1),
+               Divider(height: 1,color: Cm.textHintCol2,),
               ListTile(
                 onTap: () => _selectImages(ImageSource.gallery),
                 title: Text(
@@ -74,7 +74,7 @@ Future<List<XFile>?> showImageDialog({
                 ),
                 leading: Icon(galleryIcon, color: iconColor ?? Cm.primaryColor),
               ),
-              const Divider(height: 1),
+              Divider(height: 1,color: Cm.textHintCol2,),
               ListTile(
                 onTap: () => _selectImages(ImageSource.camera),
                 title: Text(

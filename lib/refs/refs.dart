@@ -90,6 +90,7 @@ class CustomVars {
   //collections names
   static late String usersCollName;
   static late List<String> availableLangs;
+  static late String defaultLang;
 
 
   static late String monochromeNotifIcon;//"@drawable/logo_mono"
@@ -130,6 +131,7 @@ class CustomVars {
     required String cvFirebaseProjectId,
     required String cvMonochromeNotifIcon,
     required String cvNormalNotifIcon,
+     String cvDefaultLang="en",
      List<String> cvAvailableLangs= const ["en"],
   }) {
     projectBindings = cvProjectBindings;
@@ -138,6 +140,7 @@ class CustomVars {
     firebaseProjectId = cvFirebaseProjectId;
     monochromeNotifIcon = cvMonochromeNotifIcon;
     normalNotifIcon = cvNormalNotifIcon;
+    defaultLang = cvDefaultLang;
 
     usersCollName = cvUsersCollName;
     routes = appRoutes;
@@ -230,6 +233,6 @@ class CustomVars {
   // Setter for getUser
   static void setUserGetter(dynamic Function() userGetter) {
     getUser = userGetter;
-    print('## User getter updated');
+    print('## User getter Obj updated');
   }
 }

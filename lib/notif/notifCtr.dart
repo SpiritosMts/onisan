@@ -119,12 +119,12 @@ class FirebaseMessagingCtr extends GetxController {
     }
     localToken = _token;
     //set tokreeeen must update token
-    if (ccUser.id != "" && ccUser.id != null) updateUserTokenOnline();
+     updateUserTokenOnline();
   }
 
   // ---- to_update & set in other files ----
   void updateUserTokenOnline() {
-    if (localToken.isNotEmpty && localToken != ccUser.deviceToken) {
+    if ((localToken.isNotEmpty && localToken != ccUser.deviceToken) && (ccUser.id != "" && ccUser.id != null)) {
       try {
         updateFieldInFirestore(usersColl, ccUser.id, 'deviceToken', localToken, addSuccess: () {}); //:online
         ccUser.deviceToken = localToken;
@@ -186,6 +186,7 @@ class FirebaseMessagingCtr extends GetxController {
   var notifications = <NotifItem>[].obs;
   var isLoading = true.obs;
   var hasNoNotifications = false.obs;
+  var hasNotifError = false.obs;
   var unreadNotifsCount = 0.obs;
   StreamSubscription? _notificationSubscription;
 
@@ -193,41 +194,43 @@ class FirebaseMessagingCtr extends GetxController {
     _notificationSubscription?.cancel();
   }
 
-  void startNotifsListening({bool isAdmin =false}) {
+  void startNotifsListening({String showNotifsFromDate ="0001-01-01T00:00:00.000000Z"}) {
     if (ccUser.id.isEmpty || ccUser.id == null) {
       print("## cant start notif listening (no User Id)");
       return;
-    }
-
-    var notifStartTime = ccUser.joinTime ?? "0001-01-01T00:00:00.000000Z";
-
-    if(isAdmin){
-      notifStartTime =  "0001-01-01T00:00:00.000000Z";
-    }else{
-
     }
 
 
 
 
     //todo select the coll to listen from
-    _notificationSubscription = notifsColl(userID: ccUser.id).orderBy('creationTime', descending: true)
-        .where('creationTime', isGreaterThan: notifStartTime)
-        .snapshots().listen((snapshot) {
-      if (snapshot.docs.isEmpty) {
-        hasNoNotifications.value = true;
-        unreadNotifsCount.value = 0;
-      } else {
-        List<NotifItem> fetchedNotifications = snapshot.docs.map((doc) => NotifItem.fromJson(doc.data() as Map<String, dynamic>)).toList();
+    try {
+      isLoading(true);
 
-        notifications.value = fetchedNotifications;
-        hasNoNotifications.value = false;
+      _notificationSubscription = notifsColl(userID: ccUser.id).orderBy('creationTime', descending: true)
+          .where('creationTime', isGreaterThan: showNotifsFromDate)
+          .snapshots().listen((snapshot) {
+        if (snapshot.docs.isEmpty) {
+          hasNoNotifications.value = true;
+          unreadNotifsCount.value = 0;
+        } else {
+          List<NotifItem> fetchedNotifications = snapshot.docs.map((doc) => NotifItem.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
-        // Calculate unread notifications
-        unreadNotifsCount.value = fetchedNotifications.where((NotifItem notification) => !notification.read).length;
-      }
-      isLoading.value = false;
-    });
+          notifications.value = fetchedNotifications;
+          hasNoNotifications.value = false;
+
+          // Calculate unread notifications
+          unreadNotifsCount.value = fetchedNotifications.where((NotifItem notification) => !notification.read).length;
+        }
+      });
+    }  catch (e) {
+      hasNotifError(false);
+
+      print("## error listening to notifs: $e");
+    }finally{
+      isLoading(false);
+
+    }
   }
 
 

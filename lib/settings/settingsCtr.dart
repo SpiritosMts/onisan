@@ -52,7 +52,7 @@ class SettingsCtr extends GetxController {
   var selectedLanguage = (Get.locale?.languageCode ?? 'en').obs;
 
   String? get currLang => selectedLanguage.value; //'en' , 'fr' ...
-  Locale get initLang => Locale(PreferencesService.prefs.getString('selected_lang') ?? 'en');
+  Locale get initLang => Locale(PreferencesService.prefs.getString('selected_lang') ?? CustomVars.defaultLang);
 
   void changeLanguage(String codeLang) {
     selectedLanguage.value = codeLang; // Update the selected language

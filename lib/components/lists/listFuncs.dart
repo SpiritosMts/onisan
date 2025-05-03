@@ -1,8 +1,31 @@
+import 'package:get/get.dart';
+
 import 'mapFuncs.dart';
 
 String convertListToString(List<String> items) {
   return items.join(', ');
 }
+
+
+
+/// **Adds unique items to an existing list based on a unique identifier**
+///
+/// - `targetList`: The list to which unique items will be added.
+/// - `newItems`: The list of items to check and add.
+/// - `idSelector`: A function that extracts a unique identifier from each item.
+void addUniqueItems<T>(
+    RxList<T> targetList,
+    List<T> newItems,
+    String Function(T) idSelector, // Extracts unique ID
+    ) {
+  Set<String> existingIds = targetList.map(idSelector).toSet();
+
+  List<T> uniqueItems = newItems.where((item) => !existingIds.contains(idSelector(item))).toList();
+
+  targetList.addAll(uniqueItems);
+  print("## added unique items: ${uniqueItems.length}, total: ${targetList.length}");
+}
+
 String listToCommaSeparatedTextOrdered(List<String> largeList, List<String> smallList) {
   List<String> orderedList = [];
 

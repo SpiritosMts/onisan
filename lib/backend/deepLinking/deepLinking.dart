@@ -11,6 +11,7 @@ import 'deepLinkConfig.dart';
 Uri? pendingDeepLink;
 DeepLinkConfig? get dlConfig => CustomVars.deepLinkConfig;
 
+//call in main
 void initDynamicLinks() async {
 
   try {
@@ -29,6 +30,7 @@ void initDynamicLinks() async {
     print('## ❌ Error initializing dynamic links: $e');
   }
 }
+
 void savePendingLink(Uri deepLink) {
   print('## Received and saved Deep Link: $deepLink');
   pendingDeepLink = deepLink;
@@ -37,7 +39,7 @@ void savePendingLink(Uri deepLink) {
   }
 }
 
-// open link
+// open link // call in home initstate
 void checkAndNavigatePendingLink() {
   if (pendingDeepLink != null) {
     final Uri deepLink = pendingDeepLink!;

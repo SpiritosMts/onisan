@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:onisan/components/myTheme/themeManager.dart';
+
 enum AppFont {
+  Almarai,
   JosefinSans,
   Roboto,
   Lato,
-  // Add more fonts as needed
 }
 
 class Fm {
-  static AppFont _currentFont = AppFont.JosefinSans;
+  static AppFont _currentFont = AppFont.Almarai; // Default to Almarai
 
   // Method to switch fonts
   static void switchFont(AppFont font) {
@@ -17,14 +19,25 @@ class Fm {
 
   // Getters to access text theme based on the current font
   static TextTheme get textTheme {
+    TextTheme baseTheme;
     switch (_currentFont) {
       case AppFont.Roboto:
-        return GoogleFonts.robotoTextTheme();
+        baseTheme = GoogleFonts.robotoTextTheme();
+        break;
       case AppFont.Lato:
-        return GoogleFonts.latoTextTheme();
+        baseTheme = GoogleFonts.latoTextTheme();
+        break;
       case AppFont.JosefinSans:
+        baseTheme = GoogleFonts.josefinSansTextTheme();
+        break;
+      case AppFont.Almarai:
       default:
-        return GoogleFonts.josefinSansTextTheme();
+        baseTheme = GoogleFonts.almaraiTextTheme();
     }
+    // Apply bodyColor and displayColor
+    return baseTheme.apply(
+      bodyColor: Cm.textCol,
+      displayColor: Cm.textCol,
+    );
   }
 }
