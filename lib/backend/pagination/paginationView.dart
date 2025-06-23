@@ -51,9 +51,8 @@ class _PaginationListViewState extends State<PaginationListView> with AutomaticK
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // For AutomaticKeepAliveClientMixin
+    super.build(context);
     final state = pagCtr.paginationState[widget.keyName];
-    // Check if the state exists
     if (state == null) return Center(child: Text('"${widget.keyName}" state not found'));
 
     return Obx(() {
@@ -61,7 +60,12 @@ class _PaginationListViewState extends State<PaginationListView> with AutomaticK
         return _buildLoadingIndicator();
       }
 
-      if (state['errorMsg'].value.isNotEmpty) {
+      // Show "No posts found" only if not loading and items is empty
+      if (!state['isLoading'].value && state['items'].isEmpty) {
+        return Center(child: Text('No posts found.'));
+      }
+
+      if (state['errorMsg'].value.isNotEmpty && state['items'].isEmpty) {
         return _buildErrorMessage(state['errorMsg'].value);
       }
 
