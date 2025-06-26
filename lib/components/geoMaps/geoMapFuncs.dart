@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:csc_picker/csc_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -10,6 +9,8 @@ import 'package:onisan/components/json/jsonFormat.dart';
 import 'package:onisan/components/myTheme/themeManager.dart';
 import 'package:onisan/components/snackbar/topAnimated.dart';
 import 'package:sizer/sizer.dart';
+
+import '../cscpicker/csc_picker.dart';
 
 int calculateDistance(double lat1, double lon1, double lat2, double lon2, {bool inMiles = false}) {
   const int radiusOfEarthKm = 6371; // Radius of the Earth in kilometers

@@ -1,9 +1,9 @@
 library csc_picker;
 
-import 'package:csc_picker/dropdown_with_search.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'dropdown_with_search.dart';
 import 'model/select_status_model.dart';
 
 enum Layout { vertical, horizontal }
@@ -632,7 +632,7 @@ class CSCPickerState extends State<CSCPicker> {
   ///Read JSON country data from assets
   Future<dynamic> getResponse() async {
     var res = await rootBundle
-        .loadString('packages/csc_picker/lib/assets/country.json');
+        .loadString('assets/country.json');
     return jsonDecode(res);
   }
 
