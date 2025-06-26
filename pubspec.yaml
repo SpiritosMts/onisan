@@ -108,7 +108,7 @@ dependencies:
 
 
   #animations
-  lottie: ^3.3.1
+  lottie: ^3.2.0
   rive_animated_icon: ^2.0.2
   flutter_animate: ^4.5.0
   animations: ^2.0.11
@@ -152,8 +152,7 @@ dependencies:
   heroicons: ^0.11.0
 
 
-  csc_picker:
-    path: ../edited_pckgs/csc_picker
+
 
 ###############################################################
 ###############################################################
