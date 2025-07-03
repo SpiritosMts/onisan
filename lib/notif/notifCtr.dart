@@ -50,7 +50,6 @@ import '../refs/refs.dart';
 //         jvmTarget = JavaVersion.VERSION_17
 //     }
 
-
 //TODO CALL OUTSIDE
 //stopNotifsListening() // to stop listening (in signOut ..)
 //startNotifsListening() // to start listening (in home init ..)
@@ -73,7 +72,6 @@ import '../refs/refs.dart';
 class FirebaseMessagingCtr extends GetxController {
   ///************************* PROJECT_INFO ******************************************
 
-
   Future<Map<String, dynamic>> _loadServiceAccount() async {
     final directory = await getApplicationDocumentsDirectory();
     final filePath = '${directory.path}/service-account.json';
@@ -83,21 +81,25 @@ class FirebaseMessagingCtr extends GetxController {
       return jsonDecode(await file.readAsString());
     } else {
       // Assuming the service account file is in the assets directory
-      final jsonString = await rootBundle.loadString(AssetsManager.filesServiceAccountPath!);
+      final jsonString =
+          await rootBundle.loadString(AssetsManager.filesServiceAccountPath!);
       final file = File(filePath);
       await file.writeAsString(jsonString);
       return jsonDecode(jsonString);
     }
   }
 
-  Future<auth.AuthClient> _getAuthClient(Map<String, dynamic> serviceAccount) async {
+  Future<auth.AuthClient> _getAuthClient(
+      Map<String, dynamic> serviceAccount) async {
     //Load the service account credentials from a JSON file.
-    final accountCredentials = auth.ServiceAccountCredentials.fromJson(serviceAccount);
+    final accountCredentials =
+        auth.ServiceAccountCredentials.fromJson(serviceAccount);
     // Define the access levels your application needs.
     final scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
 
     //create an authenticated HTTP client
-    final authClient = await clientViaServiceAccount(accountCredentials, scopes);
+    final authClient =
+        await clientViaServiceAccount(accountCredentials, scopes);
     return authClient;
   }
 
@@ -107,7 +109,9 @@ class FirebaseMessagingCtr extends GetxController {
   late Stream<String> _tokenStream;
 
   streamUserToken() {
-    FirebaseMessaging.instance.getToken(vapidKey: CustomVars.vapidKeyNotif).then(setToken);
+    FirebaseMessaging.instance
+        .getToken(vapidKey: CustomVars.vapidKeyNotif)
+        .then(setToken);
     _tokenStream = FirebaseMessaging.instance.onTokenRefresh;
     _tokenStream.listen(setToken);
   }
@@ -119,14 +123,16 @@ class FirebaseMessagingCtr extends GetxController {
     }
     localToken = _token;
     //set tokreeeen must update token
-     updateUserTokenOnline();
+    updateUserTokenOnline();
   }
 
   // ---- to_update & set in other files ----
   void updateUserTokenOnline() {
-    if ((localToken.isNotEmpty && localToken != ccUser.deviceToken) && (ccUser.id != "" && ccUser.id != null)) {
+    if ((localToken.isNotEmpty && localToken != ccUser.deviceToken) &&
+        (ccUser.id != "" && ccUser.id != null)) {
       try {
-        updateFieldInFirestore(usersColl, ccUser.id, 'deviceToken', localToken, addSuccess: () {}); //:online
+        updateFieldInFirestore(usersColl, ccUser.id, 'deviceToken', localToken,
+            addSuccess: () {}); //:online
         ccUser.deviceToken = localToken;
         print('## Saved token to user data = <$localToken>');
       } catch (e) {
@@ -146,9 +152,12 @@ class FirebaseMessagingCtr extends GetxController {
     streamUserToken();
 
     // When the app is opened via notification click (background or terminated state)
-    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+    FirebaseMessaging.instance
+        .getInitialMessage()
+        .then((RemoteMessage? message) {
       if (message != null) {
-        print('## App was launched from a terminated state by tapping a notification.');
+        print(
+            '## App was launched from a terminated state by tapping a notification.');
         print('## Notification data: ${message.data}');
         handleNotificationClick(jsonEncode(message.data));
       }
@@ -194,46 +203,48 @@ class FirebaseMessagingCtr extends GetxController {
     _notificationSubscription?.cancel();
   }
 
-  void startNotifsListening({String showNotifsFromDate ="0001-01-01T00:00:00.000000Z"}) {
+  void startNotifsListening(
+      {String showNotifsFromDate = "0001-01-01T00:00:00.000000Z"}) {
     if (ccUser.id.isEmpty || ccUser.id == null) {
       print("## cant start notif listening (no User Id)");
       return;
     }
 
-
-
-
     //todo select the coll to listen from
     try {
       isLoading(true);
 
-      _notificationSubscription = notifsColl(userID: ccUser.id).orderBy('creationTime', descending: true)
+      _notificationSubscription = notifsColl(userID: ccUser.id)
+          .orderBy('creationTime', descending: true)
           .where('creationTime', isGreaterThan: showNotifsFromDate)
-          .snapshots().listen((snapshot) {
+          .snapshots()
+          .listen((snapshot) {
         if (snapshot.docs.isEmpty) {
           hasNoNotifications.value = true;
           unreadNotifsCount.value = 0;
         } else {
-          List<NotifItem> fetchedNotifications = snapshot.docs.map((doc) => NotifItem.fromJson(doc.data() as Map<String, dynamic>)).toList();
+          List<NotifItem> fetchedNotifications = snapshot.docs
+              .map((doc) =>
+                  NotifItem.fromJson(doc.data() as Map<String, dynamic>))
+              .toList();
 
           notifications.value = fetchedNotifications;
           hasNoNotifications.value = false;
 
           // Calculate unread notifications
-          unreadNotifsCount.value = fetchedNotifications.where((NotifItem notification) => !notification.read).length;
+          unreadNotifsCount.value = fetchedNotifications
+              .where((NotifItem notification) => !notification.read)
+              .length;
         }
       });
-    }  catch (e) {
+    } catch (e) {
       hasNotifError(false);
 
       print("## error listening to notifs: $e");
-    }finally{
+    } finally {
       isLoading(false);
-
     }
   }
-
-
 
   ///***********************************************************************************************************************
   ///************************************************ Firebase Device send notification   *******************************************************************************
@@ -241,10 +252,10 @@ class FirebaseMessagingCtr extends GetxController {
 
   ///******************************************  firebase function deplayed  *************************************************************************************
 
-
   // *******************************  SEND WITH FUNCTIONS ********************************************************
 
-  Future<void> sendNotifFbFunc(NotifItem notif, {bool addToDb = false, List<String> targetIDs = const []}) async {
+  Future<void> sendNotifFbFunc(NotifItem notif,
+      {bool addToDb = false, List<String> targetIDs = const []}) async {
     // targetIDs List of userIDs , if empty=send to all
     try {
       final _exampleMessage = {
@@ -256,15 +267,14 @@ class FirebaseMessagingCtr extends GetxController {
             "image": "Url**",
           },
           "data": {
-           /// ...dataPayload, // dataPayload items are in data- access with message.data['obj'] -
-            "notifId": "notifId**",//fixed
+            /// ...dataPayload, // dataPayload items are in data- access with message.data['obj'] -
+            "notifId": "notifId**", //fixed
           },
         }
       };
 
-
-
-      HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('sendNotification');
+      HttpsCallable callable =
+          FirebaseFunctions.instance.httpsCallable('sendNotification');
       final response = await callable.call({
         'title': notif.title,
         'body': notif.body,
@@ -275,7 +285,8 @@ class FirebaseMessagingCtr extends GetxController {
       });
 
       if (addToDb) {
-        addNotificationToDb(notif);//todo make add to each user the same notif in his notif coll- make it in functions add bool addToDb that can can to each one
+        addNotificationToDb(
+            notif); //todo make add to each user the same notif in his notif coll- make it in functions add bool addToDb that can can to each one
       }
       final result = response.data;
 
@@ -289,13 +300,17 @@ class FirebaseMessagingCtr extends GetxController {
     }
   }
 
-
-
-
   // *******************************  SEND IN APP ********************************************************
-  Future<void> sendNotifApp({required String receiverToken, required String title, required String body, String imageUrl = '', Map<String, dynamic> data = const {},String? notifId,}) async {
+  Future<void> sendNotifApp({
+    required String receiverToken,
+    required String title,
+    required String body,
+    String imageUrl = '',
+    Map<String, dynamic> data = const {},
+    String? notifId,
+  }) async {
     try {
-      if(receiverToken.isEmpty) {
+      if (receiverToken.isEmpty) {
         //print("## no device token , pushing notif denied");
         return;
       }
@@ -303,9 +318,8 @@ class FirebaseMessagingCtr extends GetxController {
       final authClient = await _getAuthClient(serviceAccount);
       String specificID = Uuid().v1();
 
-      final url = 'https://fcm.googleapis.com/v1/projects/${CustomVars.firebaseProjectId}/messages:send';
-
-
+      final url =
+          'https://fcm.googleapis.com/v1/projects/${CustomVars.firebaseProjectId}/messages:send';
 
       final message = {
         "message": {
@@ -317,8 +331,8 @@ class FirebaseMessagingCtr extends GetxController {
           },
           "data": {
             ...data,
-            "notifId": notifId??specificID,
-            "message": body,//remove
+            "notifId": notifId ?? specificID,
+            "message": body, //remove
           },
         }
       };
@@ -342,7 +356,10 @@ class FirebaseMessagingCtr extends GetxController {
     }
   }
 
-  Future<void> sendNotifToUsers({ required List users,required NotifItem notif, bool addToDb = false})async{
+  Future<void> sendNotifToUsers(
+      {required List users,
+      required NotifItem notif,
+      bool addToDb = false}) async {
     for (var user in users) {
       // Send push notification to the user
       sendNotifApp(
@@ -356,19 +373,27 @@ class FirebaseMessagingCtr extends GetxController {
 
       // Optionally add notification to Firestore DB for each user
       if (addToDb) {
-        addNotificationToDb( notif,userId: user.id,);
+        addNotificationToDb(
+          notif,
+          userId: user.id,
+        );
       }
     }
   }
 
   // *******************************  ADD TO FIRESTORE ********************************************************
 
-  Future<void> addNotificationToDb(NotifItem notification, {String? userId}) async {
+  Future<void> addNotificationToDb(NotifItem notification,
+      {String? userId}) async {
     // Reference to the user's notifications subcollection
-    CollectionReference notificationsRef = notifsColl(userID: userId ?? ccUser.id);
+    CollectionReference notificationsRef =
+        notifsColl(userID: userId ?? ccUser.id);
 
     // Add the notification to the subcollection
-    await notificationsRef.doc(notification.id).set(notification.toJson()).then((_) {
+    await notificationsRef
+        .doc(notification.id)
+        .set(notification.toJson())
+        .then((_) {
       //print('## Notification added successfully');
     }).catchError((error) {
       //print('## Failed to add notification: $error');
@@ -382,25 +407,25 @@ class FirebaseMessagingCtr extends GetxController {
       senderId: ccUser.id,
       creationTime: nowToUtc(),
       title: 'Special offer just for you!',
-      body: 'Get 50% off on your next purchase. Don’t miss out!',
+      body: "Get 50% off on your next purchase. Don’t miss out!",
       dataPayload: {
         //must be <string : string >
-        "chatroomName": "fsdfsd sdf",//dynamic
-        "single": "true",//dynamic
-        "postId": "27c0622a-5eae-4a3b-a951-912d7c41a715",//dynamic
+        "chatroomName": "fsdfsd sdf", //dynamic
+        "single": "true", //dynamic
+        "postId": "27c0622a-5eae-4a3b-a951-912d7c41a715", //dynamic
         //"notifId": "123",//fixed in functions
       },
       topic: 'Promotions',
       type: 'promotion',
       priority: 'hign',
       status: 'active',
-      imageUrl: 'https://i.pinimg.com/originals/95/df/52/95df5222365d97eeedf029f4858d48ed.jpg',
+      imageUrl:
+          'https://i.pinimg.com/originals/95/df/52/95df5222365d97eeedf029f4858d48ed.jpg',
       read: false,
     );
 
-    sendNotifFbFunc(_notifExample,targetIDs:[] , addToDb: false);
+    sendNotifFbFunc(_notifExample, targetIDs: [], addToDb: false);
   }
-
 }
 
 ///---------------------------------------- NOtification Permissions -----------------------------------------------
@@ -435,7 +460,8 @@ Future<bool> requestNotificationsPermission() async {
         }
       } else {
         // For Android versions below 13 (no explicit permission required)
-        print('## Android version below 13, notification permission granted by default');
+        print(
+            '## Android version below 13, notification permission granted by default');
         access = true; // Notifications are implicitly allowed
       }
 
@@ -444,7 +470,8 @@ Future<bool> requestNotificationsPermission() async {
       // platform IOS
       // Handle other platforms if needed (e.g., iOS, Web)
       print('## Non-Android platform detected, skipping permission request');
-      access = true; // Assume permission for platforms like iOS is granted or handled separately
+      access =
+          true; // Assume permission for platforms like iOS is granted or handled separately
     }
   } catch (e) {
     print('## Failed to request Notifications Permission: error : $e');
@@ -473,7 +500,8 @@ Future<void> checkNotificationPermission() async {
         }
       } else {
         // For Android < 13, check notification settings via Firebase Messaging
-        NotificationSettings settings = await FirebaseMessaging.instance.getNotificationSettings();
+        NotificationSettings settings =
+            await FirebaseMessaging.instance.getNotificationSettings();
         if (settings.authorizationStatus == AuthorizationStatus.authorized) {
           print('## Notifications are enabled (Android < 13)');
           settingCtr.saveNotifSetting(true);
@@ -484,7 +512,8 @@ Future<void> checkNotificationPermission() async {
       }
     } else if (Platform.isIOS) {
       // iOS devices, checking notification settings
-      NotificationSettings settings = await FirebaseMessaging.instance.getNotificationSettings();
+      NotificationSettings settings =
+          await FirebaseMessaging.instance.getNotificationSettings();
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         print('## Notifications are enabled (iOS)');
         settingCtr.saveNotifSetting(true);
@@ -494,7 +523,8 @@ Future<void> checkNotificationPermission() async {
       }
     } else {
       // Handle other platforms if necessary
-      print('## Non-Android/iOS platform detected, assuming notifications are enabled');
+      print(
+          '## Non-Android/iOS platform detected, assuming notifications are enabled');
       settingCtr.saveNotifSetting(true);
     }
   } catch (e) {
@@ -526,8 +556,11 @@ Future<void> showDeviceNotification(RemoteMessage message) async {
   // Wrap the image download in a try-catch block to handle errors
   if (notificationImageUrl != '') {
     try {
-      final http.Response response = await http.get(Uri.parse(notificationImageUrl));
-      bigPictureStyleInformation = BigPictureStyleInformation(ByteArrayAndroidBitmap.fromBase64String(base64Encode(response.bodyBytes)));
+      final http.Response response =
+          await http.get(Uri.parse(notificationImageUrl));
+      bigPictureStyleInformation = BigPictureStyleInformation(
+          ByteArrayAndroidBitmap.fromBase64String(
+              base64Encode(response.bodyBytes)));
     } catch (e) {
       print('## Error downloading notification image: $e');
     }
@@ -548,7 +581,8 @@ Future<void> showDeviceNotification(RemoteMessage message) async {
           icon: CustomVars.monochromeNotifIcon,
           playSound: true,
           enableVibration: true,
-          styleInformation: bigPictureStyleInformation, // Show image if available
+          styleInformation:
+              bigPictureStyleInformation, // Show image if available
         ),
       ),
     );
@@ -556,7 +590,8 @@ Future<void> showDeviceNotification(RemoteMessage message) async {
 }
 
 //send multiple
-Future<void> showStackNotification(RemoteMessage message, {String? payload}) async {
+Future<void> showStackNotification(RemoteMessage message,
+    {String? payload}) async {
   if (!settingCtr.isNotifEnabled.value) {
     print('## (disabled) dont show Notification On Device ##');
     return;
@@ -569,13 +604,15 @@ Future<void> showStackNotification(RemoteMessage message, {String? payload}) asy
   // Extracting chatId and message list from data payload
   String notifId = data['notifId'] ?? '';
   String notifTitle = notification?.title ?? "";
-  String newMessage = data['message'] ?? notification?.body ?? ''; //TODO removed in new version
+  String newMessage =
+      data['message'] ?? notification?.body ?? ''; //TODO removed in new version
   //String chatroomName = data['chatroomName'] ?? appDisplayName;
   String type = data['type'] ?? 'normal';
   bool single = (data['single'] == "true");
 
   // Retrieve previous messages for this chat from local storage (e.g., shared preferences)
-  List<String> messages = await _getStoredMessages(notifId); // Implement this method to get stored messages
+  List<String> messages = await _getStoredMessages(
+      notifId); // Implement this method to get stored messages
   messages.add(newMessage); // Add the new message to the list
 
   // Use chatId as the notification ID (ensures it updates the same notification)
@@ -595,15 +632,20 @@ Future<void> showStackNotification(RemoteMessage message, {String? payload}) asy
   );
 
   // Save the updated messages back to local storage
-  await _storeMessages(notifId, messages); // Implement this method to store messages
+  await _storeMessages(
+      notifId, messages); // Implement this method to store messages
 
   if (notification != null && android != null && !kIsWeb) {
-    print('## showing Notification On Device...  ( ${payload!=null? "with payload":"with NO payload"})  ##');
+    print(
+        '## showing Notification On Device...  ( ${payload != null ? "with payload" : "with NO payload"})  ##');
     flutterLocalNotificationsPlugin!.show(
       notificationId, // Use chatId hash as the notification ID to group notifications
       notification.title,
-      notification.body, // You can omit this if you're using the inbox style to show the messages
-      payload: payload ,///set THE PAYLOAD which i get later ****************************
+      notification
+          .body, // You can omit this if you're using the inbox style to show the messages
+      payload: payload,
+
+      ///set THE PAYLOAD which i get later ****************************
       NotificationDetails(
         android: AndroidNotificationDetails(
           channel.id,
@@ -614,7 +656,9 @@ Future<void> showStackNotification(RemoteMessage message, {String? payload}) asy
           icon: CustomVars.monochromeNotifIcon,
           playSound: true,
           enableVibration: true,
-          styleInformation: single ? bigTextStyleInformation : inboxStyleInformation, // Inbox style for showing multiple lines
+          styleInformation: single
+              ? bigTextStyleInformation
+              : inboxStyleInformation, // Inbox style for showing multiple lines
         ),
       ),
     );
@@ -625,7 +669,8 @@ Future<void> showStackNotification(RemoteMessage message, {String? payload}) asy
 ///--------------------------------------------------------------------------------------------------------------------
 
 late AndroidNotificationChannel channel;
-bool isFlutterLocalNotificationsInitialized = false; // flutter notif initalized state
+bool isFlutterLocalNotificationsInitialized =
+    false; // flutter notif initalized state
 FlutterLocalNotificationsPlugin? flutterLocalNotificationsPlugin;
 
 Future<void> setupFlutterNotifications() async {
@@ -647,15 +692,17 @@ Future<void> setupFlutterNotifications() async {
   flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
   await flutterLocalNotificationsPlugin!
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
   await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: true,
     badge: true,
     sound: true,
   );
-   AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings(CustomVars.normalNotifIcon);
-   InitializationSettings initializationSettings = InitializationSettings(
+  AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings(CustomVars.normalNotifIcon);
+  InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
   );
   //--- initialization ---
@@ -664,7 +711,8 @@ Future<void> setupFlutterNotifications() async {
     onDidReceiveNotificationResponse: (NotificationResponse response) {
       handleNotificationClick(response.payload);
     },
-    onDidReceiveBackgroundNotificationResponse: _handleBackgroundNotificationClick,
+    onDidReceiveBackgroundNotificationResponse:
+        _handleBackgroundNotificationClick,
   );
   isFlutterLocalNotificationsInitialized = true;
 }
@@ -674,7 +722,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   //await setupFlutterNotifications();
   //showDeviceNotification(message);
   showStackNotification(message, payload: jsonEncode(message.data));
-  print('## Handling background/terminated message: ${message.notification?.title}');
+  print(
+      '## Handling background/terminated message: ${message.notification?.title}');
 }
 
 void handleNotificationClick(String? payload) {
