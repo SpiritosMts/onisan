@@ -125,9 +125,9 @@ showSuccess({String? sucText, Function()? btnOkPress}) {
     btnOkOnPress: () {
       btnOkPress!();
     },
-    // onDissmissCallback: (type) {
-    //   debugPrint('## Dialog Dissmiss from callback $type');
-    // },
+      onDismissCallback: (type) {
+      debugPrint('## Dialog dismissed from callback $type');
+    },
     //btnOkIcon: Icons.check_circle,
   ).show();
 }

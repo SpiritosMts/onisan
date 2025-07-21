@@ -37,6 +37,7 @@ class SettingsCtr extends GetxController {
     loadTheme();
     loadFont();
     loadNotifSetting();
+    loadClusteringSetting();
   }
 
   @override
@@ -220,6 +221,28 @@ class SettingsCtr extends GetxController {
     } else {
       // Disable notifications logic here
     }
+  }
+
+  /// ***************** CLUSTERING ****************************
+
+  var isClusteringEnabled = true.obs; // Default to enabled
+
+  void loadClusteringSetting() async {
+    isClusteringEnabled.value = PreferencesService.prefs.getBool('clustering_enabled') ?? true; // Default to enabled
+  }
+
+  void saveClusteringSetting(bool isEnabled) async {
+    await PreferencesService.prefs.setBool('clustering_enabled', isEnabled);
+    isClusteringEnabled.value = isEnabled;
+    applyClusteringSetting(isEnabled);
+  }
+
+  void switchClustering(bool enable) async {
+    saveClusteringSetting(enable);
+  }
+
+  void applyClusteringSetting(bool isEnabled) {
+    // Clustering logic will be handled in HomeCtr when refreshing markers
   }
 
 }
