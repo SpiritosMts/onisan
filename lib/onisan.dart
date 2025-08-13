@@ -1,8 +1,7 @@
 library onisan;
 
 export 'settings/settingsCtr.dart';
-export 'notif/notifCtr.dart';
-export 'notif/notifItem.dart';
+
 export 'backend/pagination/paginationView.dart';
 export 'backend/pagination/paginationCtr.dart';
 export 'backend/security/firebaseRules.dart';

@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,7 +10,6 @@ import 'package:onisan/components/connection/connectivity.dart';
 import 'package:onisan/components/deviceInfo/deviceInfoService.dart';
 import 'package:onisan/components/json/jsonFormat.dart';
 import 'package:onisan/components/loading/loadingCtr.dart';
-import 'package:onisan/notif/notifCtr.dart';
 import 'package:onisan/settings/settingsCtr.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,39 +23,27 @@ ConnectivityService get connectivityServ => ConnectivityService.instance;
 AppInfo get appInfoServ => AppInfo.instance;
 User? get fAuthcUser => FirebaseAuth.instance.currentUser;
 FirebaseAuth get fAuth => FirebaseAuth.instance;
-FirebaseDatabase? get database => FirebaseDatabase.instance;//real time database
-
+FirebaseDatabase? get database => FirebaseDatabase.instance; //real time database
 
 String snapshotErrorMsg = 'check Connexion'.tr;
-
 
 // onisan ctrs ***********
 //LoadingService get ldCtr => Get.find<LoadingService>();// in loadingCtr.dart
 PaginationCtr get pagCtr => Get.find<PaginationCtr>();
-SettingsCtr get settingCtr => Get.find<SettingsCtr>();
-FirebaseMessagingCtr get ntfCtr => Get.find<FirebaseMessagingCtr>();
-
-
-
-
 
 String usersCollName = 'users';
 CollectionReference prDataColl = FirebaseFirestore.instance.collection('prData');
 CollectionReference usersColl = FirebaseFirestore.instance.collection('users');
 CollectionReference notificationsColl = FirebaseFirestore.instance.collection('notifications');
 
-CollectionReference notifsColl({String? userID,bool specificColl = true}) {
-
-  if(!specificColl) return notificationsColl;
-
+CollectionReference notifsColl({String? userID, bool specificColl = true}) {
+  if (!specificColl) return notificationsColl;
 
   if (userID == null || userID.isEmpty) {
     throw ArgumentError('## UserID cannot be null or empty to get notifs');
   }
-   return usersColl.doc(userID).collection('notifications');
+  return usersColl.doc(userID).collection('notifications');
 }
-
-
 
 ///**************** NavigatorService
 // class NavigatorService {
@@ -76,14 +62,9 @@ class NavigatorService {
   static GlobalKey<NavigatorState>? navigatorKey;
 }
 
-
-
-
 ///************************** CustomVars
 
-
 dynamic get ccUser => CustomVars.getUser();
-
 
 class CustomVars {
   //collections names
@@ -91,9 +72,8 @@ class CustomVars {
   static late List<String> availableLangs;
   static late String defaultLang;
 
-
-  static late String monochromeNotifIcon;//"@drawable/logo_mono"
-  static late String normalNotifIcon;//'@mipmap/launcher_icon'
+  static late String monochromeNotifIcon; //"@drawable/logo_mono"
+  static late String normalNotifIcon; //'@mipmap/launcher_icon'
 
   //firebase
 
@@ -101,8 +81,6 @@ class CustomVars {
 
   static late String vapidKeyNotif;
   static late String firebaseProjectId;
-
-
 
   // Static variables for palettes and Firebase options
   static late Map<String, ColorPalette> paletteMap;
@@ -115,10 +93,11 @@ class CustomVars {
   static void initializeUser({required dynamic Function() userGetter}) {
     getUser = userGetter;
   }
+
   // Single method to initialize all custom variables
   static void initialize({
     required FirebaseOptions firebaseOpts,
-     String cvUsersCollName="users",
+    String cvUsersCollName = "users",
     required Map<String, ColorPalette> palettes,
     required ThemeData Function() themeGetter,
     required List<GetPage> appRoutes,
@@ -128,8 +107,8 @@ class CustomVars {
     required String cvFirebaseProjectId,
     required String cvMonochromeNotifIcon,
     required String cvNormalNotifIcon,
-     String cvDefaultLang="en",
-     List<String> cvAvailableLangs= const ["en"],
+    String cvDefaultLang = "en",
+    List<String> cvAvailableLangs = const ["en"],
   }) {
     projectBindings = cvProjectBindings;
     availableLangs = cvAvailableLangs;
@@ -160,7 +139,7 @@ class CustomVars {
     //   print('  $key: ${value.runtimeType}');
     // });
 
-   // print('- Theme Getter: Exists? ${getAppTheme != null}');
+    // print('- Theme Getter: Exists? ${getAppTheme != null}');
 
     print('- Routes:');
     for (var route in routes) {
@@ -169,11 +148,10 @@ class CustomVars {
 
     print('- Deep Link Config:');
 
-
     printGetUser();
   }
 
- static void printGetUser() {
+  static void printGetUser() {
     try {
       if (CustomVars.getUser != null) {
         var user = CustomVars.getUser(); // Call the dynamic function
@@ -190,8 +168,6 @@ class CustomVars {
       print('## Error calling getUser: $e');
     }
   }
-
-
 
   // Setters for updating individual variables dynamically
 
@@ -220,7 +196,7 @@ class CustomVars {
   }
 
   // Setter for deepLinkConfig
-  //TODO  
+  //TODO
   // static void setDeepLinkConfig(DeepLinkConfig deepLinkCfg) {
   //   deepLinkConfig = deepLinkCfg;
   //   print('## Deep link config updated');
