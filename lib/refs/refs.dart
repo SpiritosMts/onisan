@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:onisan/backend/deepLinking/deepLinkConfig.dart';
 import 'package:onisan/backend/pagination/paginationCtr.dart';
 import 'package:onisan/components/appInfo/appInfo.dart';
 import 'package:onisan/components/connection/connectivity.dart';
@@ -33,7 +32,7 @@ String snapshotErrorMsg = 'check Connexion'.tr;
 
 
 // onisan ctrs ***********
-LoadingService get ldCtr => Get.find<LoadingService>();
+//LoadingService get ldCtr => Get.find<LoadingService>();// in loadingCtr.dart
 PaginationCtr get pagCtr => Get.find<PaginationCtr>();
 SettingsCtr get settingCtr => Get.find<SettingsCtr>();
 FirebaseMessagingCtr get ntfCtr => Get.find<FirebaseMessagingCtr>();
@@ -100,7 +99,6 @@ class CustomVars {
 
   static late FirebaseOptions firebaseOptions;
 
-  static  DeepLinkConfig? deepLinkConfig;
   static late String vapidKeyNotif;
   static late String firebaseProjectId;
 
@@ -124,7 +122,6 @@ class CustomVars {
     required Map<String, ColorPalette> palettes,
     required ThemeData Function() themeGetter,
     required List<GetPage> appRoutes,
-     DeepLinkConfig? deepLinkCfg,
     required void Function() cvProjectBindings, // Required project bindings
 
     required String cvVapidKeyNotif,
@@ -147,7 +144,6 @@ class CustomVars {
     firebaseOptions = firebaseOpts;
     paletteMap = palettes;
     getAppTheme = themeGetter;
-    deepLinkConfig = deepLinkCfg;
   }
 
   // Method to print all CustomVars properties
@@ -172,7 +168,6 @@ class CustomVars {
     }
 
     print('- Deep Link Config:');
-    printJson(deepLinkConfig!.toJson());
 
 
     printGetUser();
@@ -225,10 +220,11 @@ class CustomVars {
   }
 
   // Setter for deepLinkConfig
-  static void setDeepLinkConfig(DeepLinkConfig deepLinkCfg) {
-    deepLinkConfig = deepLinkCfg;
-    print('## Deep link config updated');
-  }
+  //TODO  
+  // static void setDeepLinkConfig(DeepLinkConfig deepLinkCfg) {
+  //   deepLinkConfig = deepLinkCfg;
+  //   print('## Deep link config updated');
+  // }
 
   // Setter for getUser
   static void setUserGetter(dynamic Function() userGetter) {

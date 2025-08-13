@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:onisan/components/dialog/bottomSheet.dart';
+import 'package:onisan/onisan.dart';
 import 'package:onisan/refs/refs.dart';
 
 import '../../components/snackbar/topAnimated.dart';

@@ -8,7 +8,7 @@ import '../notif/notifCtr.dart';
 class OnisanBinding implements Bindings {
   @override
   void dependencies() {
-    Get.put<LoadingService>(LoadingService());
+    Get.put<LoadingService>(LoadingService(),permanent: true);
     Get.lazyPut<PaginationCtr>(() => PaginationCtr(),fenix: true);
     Get.put<FirebaseMessagingCtr>(FirebaseMessagingCtr());
 

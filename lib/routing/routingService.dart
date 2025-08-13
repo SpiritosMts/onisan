@@ -1,7 +1,5 @@
 import 'package:get/get.dart';
-import 'package:onisan/backend/deepLinking/deepLinking.dart';
 import 'package:onisan/components/snackbar/topAnimated.dart';
-
 
 void goToNonStacked(String targetRoute) {
   bool isRouteFound = false;
@@ -27,58 +25,65 @@ void goToNonStacked(String targetRoute) {
   } else {
     print('## Navigated back to $targetRoute');
     // Get.until((route) => route.settings.name == route);
-
   }
 }
 
 // Dynamic Routing
+//TODO0
+// //if i have a object locally pass it directly without downloading it again
+// goTargetDetails(dynamic target){
+//   if(target==null || target.id.isEmpty) {
+//     print("## goTargetDetails (target==null || target.id.isEmpty)");
+//     return;
+//   }
+//   Get.toNamed('/${dlConfig!.targetName}/${target.id}', arguments: {'object': target});
+// }
 
-//if i have a object locally pass it directly without downloading it again
-goTargetDetails(dynamic target){
-  if(target==null || target.id.isEmpty) {
-    print("## goTargetDetails (target==null || target.id.isEmpty)");
-    return;
-  }
-  Get.toNamed('/${dlConfig!.tagetName}/${target.id}', arguments: {'object': target});
-}
 
+// //if i only have the object id download it from database using taht id
+//TODO0
+// void goTargetDetailsID(String? id) {
+//   print("## goTargetDetailsID called with id: $id");
+//   print("## dlConfig.targetName: ${dlConfig?.targetName}");
+  
+//   // Handle null or empty ID
+//   if (id == null || id.isEmpty) {
+//     animatedSnack(message: "Failed to open ${dlConfig!.targetName}");
+//     print("## goTargetDetailsID (id==null || id.isEmpty)");
+//     return;
+//   }
 
-//if i only have the object id download it from database using taht id
+//   // Define the target route
+//   final targetRoute = '/${dlConfig!.targetName}/$id';
+//   print("## Target route: $targetRoute");
 
-void goTargetDetailsID(String? id) {
-  // Handle null or empty ID
-  if (id == null || id.isEmpty) {
-    animatedSnack(message: "Failed to open ${dlConfig!.tagetName}");
-    print("## goTargetDetailsID (id==null || id.isEmpty)");
-    return;
-  }
+//   // Get the current route
+//   final currentRoute = Get.currentRoute;
+//   print("## Current route: $currentRoute");
 
-  // Define the target route
-  final targetRoute = '/${dlConfig!.tagetName}/$id';
+//   // Check if the current route is already a target details page
+//   if (currentRoute.startsWith('/${dlConfig!.targetName}/')) {
+//     // Extract the current ID from the route
+//     final currentId = currentRoute.split('/').last;
+//     print("## Current ID from route: $currentId");
 
-  // Get the current route
-  final currentRoute = Get.currentRoute;
-
-  // Check if the current route is already a target details page
-  if (currentRoute.startsWith('/${dlConfig!.tagetName}/')) {
-    // Extract the current ID from the route
-    final currentId = currentRoute.split('/').last;
-
-    // If the new ID matches the current ID, do nothing
-    if (currentId == id) {
-      print("## Already on $targetRoute, no navigation needed");
-      return;
-    } else {
-      // Replace the current page with the new ID
-      Get.offNamed(targetRoute);
-      print("## Replaced current route with $targetRoute");
-    }
-  } else {
-    // If not currently on a target details page, navigate normally
-    Get.toNamed(targetRoute);
-    print("## Navigated to $targetRoute");
-  }
-}
+//     // If the new ID matches the current ID, do nothing
+//     if (currentId == id) {
+//       print("## Already on $targetRoute, no navigation needed");
+//       return;
+//     } else {
+//       // Replace the current page with the new ID
+//       print("## Replacing current route with $targetRoute");
+//       Get.offNamed(targetRoute);
+//       print("## Replaced current route with $targetRoute");
+//     }
+//   } else {
+//     // If not currently on a target details page, navigate normally
+//     print("## Navigating to $targetRoute");
+//     Get.toNamed(targetRoute);
+//     print("## Navigated to $targetRoute");
+//   }
+// }
 
 /// in postDetails
 /*

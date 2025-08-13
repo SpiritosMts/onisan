@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -144,8 +143,8 @@ Future<String> uploadFileToFirebase(dynamic pickedFile, String? storagePath) asy
     await storageRef.putFile(file); // Upload the file to Firebase Storage
     downloadUrl = await storageRef.getDownloadURL(); // Return the download URL after upload
 
-    if (downloadUrl == null || downloadUrl.isEmpty) {
-      throw Exception("## Error uploading file (downloadUrl == null or empty)");
+    if (downloadUrl.isEmpty) {
+      throw Exception("## Error uploading file (downloadUrl is empty)");
     } else {
       print("## File uploaded ");
     }
@@ -218,8 +217,6 @@ Future<List<DocumentSnapshot>> getDocumentsByIDs(
   CollectionReference coll, {
   List<String> IDs = const [],
 }) async {
-  // List userStoresIDs = authCtr.cUser.stores!;
-  List userStoresIDs = [];
   QuerySnapshot snap = (IDs != [] ? await coll.where('id', whereIn: IDs).get() : await coll.get());
 
   final documentsMap = snap.docs;
@@ -243,7 +240,7 @@ Future<List<DocumentSnapshot>> getDocumentsByColl(CollectionReference coll) asyn
   return documentsFound;
 }
 
-//type T dynamic List<Post>, List<User> ....
+// Option 1: Enhanced version with better type conversion
 Future<List<T>> getAlldocsModelsFromFb<T>(
   CollectionReference coll,
   T Function(Map<String, dynamic>) fromJson,
@@ -253,14 +250,194 @@ Future<List<T>> getAlldocsModelsFromFb<T>(
   try {
     List<DocumentSnapshot> docs = await getDocumentsByColl(coll);
     for (var doc in docs) {
-      T model = fromJson(doc.data() as Map<String, dynamic>);
-      models.add(model);
+      try {
+        // Get the document data safely
+        final docData = doc.data();
+        if (docData == null) {
+          print('## Warning: Document ${doc.id} has null data, skipping');
+          continue;
+        }
+
+        Map<String, dynamic> documentData = Map<String, dynamic>.from(docData as Map<String, dynamic>);
+
+        // Enhanced normalization with type conversion
+        Map<String, dynamic> normalizedData = _normalizeDocumentDataEnhanced(documentData);
+
+        T model = fromJson(normalizedData);
+        models.add(model);
+      } catch (e) {
+        print('## Error processing document ${doc.id}: $e');
+        print('## Document data: ${doc.data()}'); // Debug info
+        // Continue processing other documents instead of failing completely
+        continue;
+      }
     }
     print('## fetched (${models.length}) models; from collection <${coll.path}>');
   } catch (e) {
     print('## Error fetching models: $e');
+    rethrow;
   }
   return models;
+}
+
+// Enhanced normalization function with type conversion
+Map<String, dynamic> _normalizeDocumentDataEnhanced(Map<String, dynamic> data) {
+  Map<String, dynamic> normalized = {};
+
+  data.forEach((key, value) {
+    if (value == null) {
+      normalized[key] = null;
+    } else if (value is int || value is double) {
+      // Convert numbers to strings if needed (you can customize this logic)
+      // Check if the field name suggests it should be a string
+      if (_shouldConvertToString(key)) {
+        normalized[key] = value.toString();
+      } else {
+        normalized[key] = value;
+      }
+    } else if (value is String) {
+      // Try to convert string to number if it looks like a number and field expects it
+      if (_shouldConvertToNumber(key) && _isNumeric(value)) {
+        normalized[key] = int.tryParse(value) ?? double.tryParse(value) ?? value;
+      } else {
+        normalized[key] = value;
+      }
+    } else if (value is Map) {
+      // Recursively normalize nested maps
+      normalized[key] = _normalizeDocumentDataEnhanced(Map<String, dynamic>.from(value));
+    } else if (value is List) {
+      // Handle lists
+      normalized[key] = value.map((item) {
+        if (item is Map) {
+          return _normalizeDocumentDataEnhanced(Map<String, dynamic>.from(item));
+        }
+        return item;
+      }).toList();
+    } else {
+      normalized[key] = value;
+    }
+  });
+
+  return normalized;
+}
+
+// Helper function to determine if a field should be converted to string
+bool _shouldConvertToString(String fieldName) {
+  // Add your field names that should be strings even if they come as numbers
+  const stringFields = {'id', 'userId', 'phoneNumber', 'zipCode', 'code', 'reference'};
+  return stringFields.contains(fieldName) || fieldName.toLowerCase().contains('id');
+}
+
+// Helper function to determine if a field should be converted to number
+bool _shouldConvertToNumber(String fieldName) {
+  const numberFields = {'age', 'count', 'price', 'amount', 'quantity', 'score', 'rating'};
+  return numberFields.contains(fieldName);
+}
+
+// Helper function to check if a string is numeric
+bool _isNumeric(String str) {
+  return double.tryParse(str) != null;
+}
+
+// Option 2: Safer version with try-catch for each field conversion
+Future<List<T>> getAlldocsModelsFromFbSafe<T>(
+  CollectionReference coll,
+  T Function(Map<String, dynamic>) fromJson,
+) async {
+  List<T> models = [];
+
+  try {
+    List<DocumentSnapshot> docs = await getDocumentsByColl(coll);
+    for (var doc in docs) {
+      try {
+        final docData = doc.data();
+        if (docData == null) {
+          print('## Warning: Document ${doc.id} has null data, skipping');
+          continue;
+        }
+
+        Map<String, dynamic> documentData = Map<String, dynamic>.from(docData as Map<String, dynamic>);
+
+        // Safe conversion with individual field error handling
+        Map<String, dynamic> safeData = _safeDataConversion(documentData, doc.id);
+
+        T model = fromJson(safeData);
+        models.add(model);
+      } catch (e, stackTrace) {
+        print('## Error processing document ${doc.id}: $e');
+        print('## Stack trace: $stackTrace');
+        print('## Raw document data: ${doc.data()}');
+        continue;
+      }
+    }
+    print('## fetched (${models.length}) models; from collection <${coll.path}>');
+  } catch (e) {
+    print('## Error fetching models: $e');
+    rethrow;
+  }
+  return models;
+}
+
+Map<String, dynamic> _safeDataConversion(Map<String, dynamic> data, String docId) {
+  Map<String, dynamic> converted = {};
+
+  data.forEach((key, value) {
+    try {
+      converted[key] = value;
+    } catch (e) {
+      print('## Warning: Error converting field "$key" in document $docId: $e');
+      print('## Field value: $value (${value.runtimeType})');
+      // You can set a default value or skip the field
+      converted[key] = null; // or skip: return;
+    }
+  });
+
+  return converted;
+}
+
+/// Helper function to normalize document data types
+Map<String, dynamic> _normalizeDocumentData(Map<String, dynamic> data) {
+  Map<String, dynamic> normalized = {};
+
+  data.forEach((key, value) {
+    if (value is String) {
+      // Try to convert string to int first (preserve integers)
+      final intValue = int.tryParse(value);
+      if (intValue != null) {
+        normalized[key] = intValue;
+      } else {
+        // Try to convert string to double if it's numeric but not an integer
+        final doubleValue = double.tryParse(value);
+        if (doubleValue != null) {
+          normalized[key] = doubleValue;
+        } else {
+          normalized[key] = value;
+        }
+      }
+    } else if (value is int) {
+      // Keep integers as integers (don't convert to double)
+      normalized[key] = value;
+    } else if (value is double) {
+      // Keep doubles as doubles
+      normalized[key] = value;
+    } else if (value is Map) {
+      // Recursively normalize nested maps
+      normalized[key] = _normalizeDocumentData(Map<String, dynamic>.from(value));
+    } else if (value is List) {
+      // Handle lists by normalizing each element if it's a map
+      normalized[key] = value.map((item) {
+        if (item is Map<String, dynamic>) {
+          return _normalizeDocumentData(item);
+        }
+        return item;
+      }).toList();
+    } else {
+      // For all other types (bool, null, etc.), keep as is
+      normalized[key] = value;
+    }
+  });
+
+  return normalized;
 }
 
 // type T but from map of a doc
@@ -334,22 +511,49 @@ Future<void> updateDocMap({
 }
 
 Future<void> updateFieldInFirestore(
-  //use aawait with it
   CollectionReference coll,
   String docId,
   String fieldName,
   dynamic fieldValue, {
-  Function()? addSuccess,
+  Function()? onSuccess,
+  Function(String error)? onError,
 }) async {
   try {
+    // Validate inputs - handle empty docId gracefully
+    if (docId.isEmpty) {
+      final errorMsg = 'Cannot update field: User not authenticated or document ID is empty';
+      print('## $errorMsg - Skipping update for <${coll.path}/$fieldName>');
+      onError?.call(errorMsg);
+      return; // Return gracefully instead of throwing
+    }
+
+    if (fieldName.isEmpty) {
+      final errorMsg = 'Field name cannot be empty';
+      print('## $errorMsg');
+      onError?.call(errorMsg);
+      return; // Return gracefully instead of throwing
+    }
+
     await coll.doc(docId).update({
       fieldName: fieldValue,
     });
+
     print('## Field updated successfully <${coll.path}/$docId/$fieldName> = <$fieldValue>');
-    if (addSuccess != null) addSuccess();
+
+    // Call success callback if provided
+    onSuccess?.call();
+  } on FirebaseException catch (e) {
+    final errorMsg = 'Firebase error updating field <${coll.path}/$docId/$fieldName>: ${e.message}';
+    print('## $errorMsg');
+
+    onError?.call(errorMsg);
+    // Don't rethrow Firebase exceptions to prevent app crashes
   } catch (e) {
-    print('## Error updating field <${coll.path}/$docId/$fieldName> = <$fieldValue>  /ERROR : $e ///');
-    throw Exception('## Exception updateFieldInFirestore');
+    final errorMsg = 'Error updating field <${coll.path}/$docId/$fieldName>: $e';
+    print('## $errorMsg');
+
+    onError?.call(errorMsg);
+    // Don't rethrow general exceptions to prevent app crashes
   }
 }
 
@@ -377,134 +581,301 @@ Future<void> deleteDoc({Function()? success, required String docID, required Col
 }
 
 /// ************************* DOCUMENT MAP OPERATIONs **************************************************
-
-deleteFromMap({
-  coll,
-  docID,
-  fieldMapName,
+/// Deletes an item from a map field in a Firestore document
+Future<void> deleteFromMap({
+  required dynamic coll, // Can be CollectionReference or String
+  required String docID,
+  required String fieldMapName,
   String mapKeyToDelete = '',
+  String targetInvID = '',
   bool withBackDialog = false,
-  String targetInvID = '',
-  Function()? addSuccess,
-}) {
-  //we need either targetInvID or mapKeyToDelete to delete item from map
-  print('## try deleting map in ${coll}/$docID/$fieldMapName/$mapKeyToDelete');
-  if (targetInvID != '') print('## targetInvID = <$targetInvID> '); // delete map B in map A by ""value"" in map B,
-  if (mapKeyToDelete != '') print('## mapKeyToDelete = <$mapKeyToDelete>'); // delete map B in map A by ""key"" of map B,
+  VoidCallback? addSuccess,
+}) async {
+  // Validation
+  if (mapKeyToDelete.isEmpty && targetInvID.isEmpty) {
+    debugPrint('## Error: Either mapKeyToDelete or targetInvID must be provided');
+    return;
+  }
 
-  coll.doc(docID).get().then((DocumentSnapshot documentSnapshot) async {
-    if (documentSnapshot.exists) {
-      try {
-        Map<String, dynamic> fieldMap = documentSnapshot.get(fieldMapName);
-        String keyToDelete = mapKeyToDelete;
-        //search map key depending on specific value
-        if (targetInvID != '') {
-          for (var entry in fieldMap.entries) {
-            if (entry.value['invID'] == targetInvID) {
-              keyToDelete = entry.key;
-            }
-          }
-        }
+  if (docID.isEmpty) {
+    debugPrint('## Error: Document ID cannot be empty');
+    return;
+  }
 
-        if (fieldMap.containsKey(keyToDelete)) {
-          fieldMap.remove(keyToDelete);
-          if (addSuccess != null) addSuccess();
-        } else {
-          print('## hisTr not found or already deleted');
-          return;
-        }
-
-        await coll.doc(docID).update({
-          '${fieldMapName}': fieldMap,
-        });
-
-        //------- success
-
-        print('## item from fieldMap<$fieldMapName> deleted');
-      } catch (error) {
-        print('## ERROR: item from fieldMap <$fieldMapName> FAILED to deleted: $error');
-        throw Exception('## Exception ');
-      }
-    } else {
-      print('## doc<$docID> dont exist');
-    }
-  }).catchError((error) async {
-    print('## ERROR: FAILED to even get  ${coll}/$docID/ : $error');
-  });
-}
-
-Map<String, dynamic> deleteFromMapLocal({
-  mapInitial,
-  String mapKeyToDelete = '',
-  String targetInvID = '',
-  Function()? addSuccess,
-}) {
-  Map<String, dynamic> fieldMap = {};
-  //we need either targetInvID or mapKeyToDelete to delete item from map
-  if (targetInvID != '') print('## targetInvID = <$targetInvID> '); // delete map B in map A by ""value"" in map B,
-  if (mapKeyToDelete != '') print('## mapKeyToDelete = <$mapKeyToDelete>'); // delete map B in map A by ""key"" of map B,
-
+  // Handle collection reference
+  CollectionReference collection;
   try {
-    fieldMap = mapInitial;
-    String keyToDelete = mapKeyToDelete;
-    //search map key depending on specific value
-    if (targetInvID != '') {
-      for (var entry in fieldMap.entries) {
-        if (entry.value['invID'] == targetInvID) {
-          keyToDelete = entry.key;
-        }
-      }
-    }
-
-    print('## key To Delete = ${keyToDelete} ');
-
-    if (fieldMap.containsKey(keyToDelete)) {
-      fieldMap.remove(keyToDelete);
-      if (addSuccess != null) addSuccess();
+    if (coll is String) {
+      collection = FirebaseFirestore.instance.collection(coll);
+      debugPrint('## Using collection path: $coll');
+    } else if (coll is CollectionReference) {
+      collection = coll;
+      debugPrint('## Using CollectionReference: ${coll.path}');
     } else {
-      print('## hisTr not found or already deleted');
+      debugPrint('## Error: Invalid collection type. Expected String or CollectionReference');
+      return;
     }
   } catch (error) {
-    print('## ERROR: FAILED to remove key="$mapKeyToDelete" : $error');
-    throw Exception('## Exception ');
+    debugPrint('## Error: Failed to get collection reference: $error');
+    return;
   }
-  ;
-  return fieldMap;
+
+  debugPrint('## Attempting to delete from map: ${collection.path}/$docID/$fieldMapName');
+  if (targetInvID.isNotEmpty) debugPrint('## Searching by targetInvID: $targetInvID');
+  if (mapKeyToDelete.isNotEmpty) debugPrint('## Direct key to delete: $mapKeyToDelete');
+
+  try {
+    final DocumentSnapshot documentSnapshot = await collection.doc(docID).get();
+
+    if (!documentSnapshot.exists) {
+      debugPrint('## Error: Document "$docID" does not exist');
+      return;
+    }
+
+    // Get the field map data
+    final data = documentSnapshot.data() as Map<String, dynamic>?;
+    if (data == null || !data.containsKey(fieldMapName)) {
+      debugPrint('## Error: Field "$fieldMapName" not found in document');
+      return;
+    }
+
+    Map<String, dynamic> fieldMap = Map<String, dynamic>.from(data[fieldMapName] ?? {});
+    String keyToDelete = mapKeyToDelete;
+
+    // If targetInvID is provided, search for the key by invID value
+    if (targetInvID.isNotEmpty) {
+      String? foundKey;
+      for (var entry in fieldMap.entries) {
+        if (entry.value is Map<String, dynamic>) {
+          final entryMap = entry.value as Map<String, dynamic>;
+          if (entryMap['invID'] == targetInvID) {
+            foundKey = entry.key;
+            break;
+          }
+        }
+      }
+
+      if (foundKey != null) {
+        keyToDelete = foundKey;
+        debugPrint('## Found key by invID: $keyToDelete');
+      } else {
+        debugPrint('## Warning: No entry found with invID: $targetInvID');
+        return;
+      }
+    }
+
+    // Check if key exists and remove it
+    if (fieldMap.containsKey(keyToDelete)) {
+      fieldMap.remove(keyToDelete);
+      debugPrint('## Key "$keyToDelete" removed from local map');
+    } else {
+      debugPrint('## Warning: Key "$keyToDelete" not found or already deleted');
+      return;
+    }
+
+    // Update Firestore document
+    await collection.doc(docID).update({fieldMapName: fieldMap});
+
+    debugPrint('## Success: Item deleted from fieldMap "$fieldMapName"');
+
+    if (withBackDialog) Get.back();
+    addSuccess?.call();
+  } catch (error) {
+    debugPrint('## Error: Failed to delete from fieldMap "$fieldMapName": $error');
+    _showErrorMessage('Failed to delete item');
+    rethrow;
+  }
 }
 
-Future<void> addToMap({coll, docID, fieldMapName, mapToAdd, Function()? addSuccess, bool withBackDialog = false}) async {
-  coll.doc(docID).get().then((DocumentSnapshot documentSnapshot) async {
-    if (documentSnapshot.exists) {
-      Map<String, dynamic> fieldMap = documentSnapshot.get(fieldMapName);
+/// Deletes an item from a local map (without Firestore interaction)
+Map<String, dynamic> deleteFromMapLocal({
+  required Map<String, dynamic> mapInitial,
+  String mapKeyToDelete = '',
+  String targetInvID = '',
+  VoidCallback? addSuccess,
+}) {
+  // Validation
+  if (mapKeyToDelete.isEmpty && targetInvID.isEmpty) {
+    debugPrint('## Error: Either mapKeyToDelete or targetInvID must be provided');
+    return Map<String, dynamic>.from(mapInitial);
+  }
 
-      fieldMap[getLastIndex(fieldMap, afterLast: true)] = mapToAdd;
+  if (targetInvID.isNotEmpty) debugPrint('## Searching by targetInvID: $targetInvID');
+  if (mapKeyToDelete.isNotEmpty) debugPrint('## Direct key to delete: $mapKeyToDelete');
 
-      await coll.doc(docID).update({
-        '${fieldMapName}': fieldMap,
-      }).then((value) async {
-        if (withBackDialog) Get.back();
-        print('## item to fieldMap added');
-        //showGetXSnackBar('item added', color: Colors.black54);
-        if (addSuccess != null) addSuccess();
-      }).catchError((error) async {
-        print('## item to fieldMap FAILED to added');
-        showGetXSnackBar(snapshotErrorMsg);
+  try {
+    Map<String, dynamic> fieldMap = Map<String, dynamic>.from(mapInitial);
+    String keyToDelete = mapKeyToDelete;
 
-        //showGetXSnackBar('item failed to be added', color: Colors.redAccent.withOpacity(0.8));
-      });
-    } else {
-      print('## doc<$docID> dont exist');
+    // If targetInvID is provided, search for the key by invID value
+    if (targetInvID.isNotEmpty) {
+      String? foundKey;
+      for (var entry in fieldMap.entries) {
+        if (entry.value is Map<String, dynamic>) {
+          final entryMap = entry.value as Map<String, dynamic>;
+          if (entryMap['invID'] == targetInvID) {
+            foundKey = entry.key;
+            break;
+          }
+        }
+      }
+
+      if (foundKey != null) {
+        keyToDelete = foundKey;
+        debugPrint('## Found key by invID: $keyToDelete');
+      } else {
+        debugPrint('## Warning: No entry found with invID: $targetInvID');
+        return fieldMap;
+      }
     }
-  });
+
+    debugPrint('## Key to delete: $keyToDelete');
+
+    // Check if key exists and remove it
+    if (fieldMap.containsKey(keyToDelete)) {
+      fieldMap.remove(keyToDelete);
+      addSuccess?.call();
+      debugPrint('## Success: Key "$keyToDelete" removed from local map');
+    } else {
+      debugPrint('## Warning: Key "$keyToDelete" not found or already deleted');
+    }
+
+    return fieldMap;
+  } catch (error) {
+    debugPrint('## Error: Failed to remove key "$mapKeyToDelete" from local map: $error');
+    return Map<String, dynamic>.from(mapInitial);
+  }
+}
+
+/// Adds an item to a map field in a Firestore document
+Future<void> addToMap({
+  required dynamic coll, // Can be CollectionReference or String
+  required String docID,
+  required String fieldMapName,
+  required Map<String, dynamic> mapToAdd,
+  VoidCallback? addSuccess,
+  bool withBackDialog = false,
+}) async {
+  // Validation
+  if (docID.isEmpty) {
+    debugPrint('## Error: Document ID cannot be empty');
+    return;
+  }
+
+  if (fieldMapName.isEmpty) {
+    debugPrint('## Error: Field map name cannot be empty');
+    return;
+  }
+
+  if (mapToAdd.isEmpty) {
+    debugPrint('## Error: Map to add cannot be empty');
+    return;
+  }
+
+  // Handle collection reference
+  CollectionReference collection;
+  try {
+    if (coll is String) {
+      collection = FirebaseFirestore.instance.collection(coll);
+      debugPrint('## Using collection path: $coll');
+    } else if (coll is CollectionReference) {
+      collection = coll;
+      debugPrint('## Using CollectionReference: ${coll.path}');
+    } else {
+      debugPrint('## Error: Invalid collection type. Expected String or CollectionReference');
+      return;
+    }
+  } catch (error) {
+    debugPrint('## Error: Failed to get collection reference: $error');
+    return;
+  }
+
+  debugPrint('## Attempting to add to map: ${collection.path}/$docID/$fieldMapName');
+
+  try {
+    final DocumentSnapshot documentSnapshot = await collection.doc(docID).get();
+
+    if (!documentSnapshot.exists) {
+      debugPrint('## Error: Document "$docID" does not exist');
+      return;
+    }
+
+    // Get existing field map or initialize empty map
+    final data = documentSnapshot.data() as Map<String, dynamic>?;
+    Map<String, dynamic> fieldMap = {};
+
+    if (data != null && data.containsKey(fieldMapName)) {
+      fieldMap = Map<String, dynamic>.from(data[fieldMapName] ?? {});
+    }
+
+    // Generate next available key
+    String newKey = _getNextMapKey(fieldMap);
+    fieldMap[newKey] = mapToAdd;
+
+    debugPrint('## Adding item with key: $newKey');
+
+    // Update Firestore document
+    await collection.doc(docID).update({fieldMapName: fieldMap});
+
+    debugPrint('## Success: Item added to fieldMap "$fieldMapName"');
+
+    if (withBackDialog) Get.back();
+    addSuccess?.call();
+  } catch (error) {
+    debugPrint('## Error: Failed to add item to fieldMap "$fieldMapName": $error');
+    _showErrorMessage('Failed to add item');
+    rethrow;
+  }
+}
+
+// Helper functions
+
+/// Generates the next available key for a map
+String _getNextMapKey(Map<String, dynamic> fieldMap) {
+  if (fieldMap.isEmpty) {
+    return '0';
+  }
+
+  try {
+    // Get all numeric keys and find the maximum
+    final numericKeys = fieldMap.keys.map((key) => int.tryParse(key.toString())).where((key) => key != null).cast<int>().toList();
+
+    if (numericKeys.isEmpty) {
+      return fieldMap.length.toString();
+    }
+
+    final maxKey = numericKeys.reduce((a, b) => a > b ? a : b);
+    return (maxKey + 1).toString();
+  } catch (error) {
+    debugPrint('## Warning: Error generating numeric key, using length: $error');
+    return fieldMap.length.toString();
+  }
+}
+
+/// Shows error message using GetX snackbar
+void _showErrorMessage(String message) {
+  try {
+    Get.snackbar(
+      'Error',
+      message,
+      backgroundColor: Colors.red.withOpacity(0.8),
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(16),
+    );
+  } catch (error) {
+    debugPrint('## Error showing snackbar: $error');
+  }
 }
 
 /// ************************* DOCUMENT LIST OPERATIONS **************************************************
 
 /// Add elements to a list field in a Firestore document
 Future<void> addElementsToList(
-  List newElements, 
-  String fieldName, 
-  String docID, 
+  List newElements,
+  String fieldName,
+  String docID,
   CollectionReference coll, {
   bool canAddExistingElements = true,
 }) async {
@@ -522,9 +893,7 @@ Future<void> addElementsToList(
     print('## Existing elements: $oldElements');
 
     // Determine elements to add
-    final elementsToAdd = canAddExistingElements 
-        ? List<dynamic>.from(newElements)
-        : newElements.where((element) => !oldElements.contains(element)).toList();
+    final elementsToAdd = canAddExistingElements ? List<dynamic>.from(newElements) : newElements.where((element) => !oldElements.contains(element)).toList();
 
     if (elementsToAdd.isEmpty) {
       print('## No new elements to add');
@@ -546,9 +915,9 @@ Future<void> addElementsToList(
 
 /// Remove elements from a list field in a Firestore document
 Future<void> removeElementsFromList(
-  List elements, 
-  String fieldName, 
-  String docID, 
+  List elements,
+  String fieldName,
+  String docID,
   String collName,
 ) async {
   print('## Removing list <$elements> from <$collName/$docID/$fieldName>');
@@ -639,19 +1008,19 @@ changeUserEmail(newEmail, coll) async {
   if (user != null) {
     try {
       // Change email
-      await user.updateEmail(newEmail).then((value) {
-        coll.doc(ccUser.id).get().then((DocumentSnapshot documentSnapshot) async {
-          if (documentSnapshot.exists) {
-            await coll.doc(ccUser.id).update({
-              'email': newEmail, // turn verified to true in  db
-            }).then((value) async {
-              print('## email firestore updated');
-              showGetXSnackBar('email updated');
-              //refreshUser(_emailController.text);
-            }).catchError((error) async {});
-          }
-        });
-      });
+      // await user.updateEmail(newEmail).then((value) {
+      //   coll.doc(ccUser.id).get().then((DocumentSnapshot documentSnapshot) async {
+      //     if (documentSnapshot.exists) {
+      //       await coll.doc(ccUser.id).update({
+      //         'email': newEmail, // turn verified to true in  db
+      //       }).then((value) async {
+      //         print('## email firestore updated');
+      //         showGetXSnackBar('email updated');
+      //         //refreshUser(_emailController.text);
+      //       }).catchError((error) async {});
+      //     }
+      //   });
+      // });
     } catch (e) {
       showGetXSnackBar(
         'This operation is sensitive and requires recent authentication.\n Log in again before retrying this request',
@@ -736,8 +1105,8 @@ changeAllDocsManual() async {
 
   /// Loop through each document
   for (QueryDocumentSnapshot doc in querySnapshot.docs) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    bool conditionToAdd = !data.containsKey('deliveryMatFis') || !data.containsKey('index');
+    // Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    // bool conditionToAdd = !data.containsKey('deliveryMatFis') || !data.containsKey('index');
     if (true) {
       print('## change ( $i )<${doc.id}>');
       await collection.doc(doc.id).update({

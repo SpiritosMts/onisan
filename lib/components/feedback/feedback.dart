@@ -1,149 +1,221 @@
-import 'package:feedback/feedback.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:onisan/components/Text/textFields.dart';
-import 'package:onisan/components/snackbar/topAnimated.dart';
+// import 'package:flutter/material.dart';
+// import 'package:get/get.dart';
+// import 'package:feedback/feedback.dart';
+// import '../myTheme/themeManager.dart';
 
-import 'package:sizer/sizer.dart';
+// class FeedbackWidget extends StatelessWidget {
+//   final Widget child;
 
+//   const FeedbackWidget({super.key, required this.child});
 
-class FeedbackWidget extends StatelessWidget {
-  final Widget child;
+//   @override
+//   Widget build(BuildContext context) {
+//     return BetterFeedback(
+//       theme: FeedbackThemeData(
+//         background: Cm.greyCol.withOpacity(0.4),
+//         feedbackSheetColor: Cm.bgCol,
+//         drawColors: [
+//           Cm.primaryColor,
+//           const Color(0xFFE74C3C), // Red
+//           const Color(0xFF2ECC71), // Green
+//           const Color(0xFF3498DB), // Blue
+//           const Color(0xFFF39C12), // Orange
+//           const Color(0xFF9B59B6), // Purple
+//           const Color(0xFF1ABC9C), // Teal
+//           const Color(0xFFE67E22), // Dark Orange
+//         ],
+//         bottomSheetDescriptionStyle: TextStyle(
+//           color: Cm.textCol,
+//           fontSize: 16,
+//           fontWeight: FontWeight.w500,
+//         ),
+//         bottomSheetTextInputStyle: TextStyle(
+//           color: Cm.textCol,
+//           fontSize: 14,
+//         ),
+//         activeFeedbackModeColor: Cm.primaryColor,
+//         colorScheme: ColorScheme.fromSeed(
+//           seedColor: Cm.primaryColor,
+//           brightness: Brightness.dark,
+//         ),
+//       ),
+//       feedbackBuilder: (context, onSubmit, controller) {
+//         return FeedbackForm(onSubmit: onSubmit);
+//       },
+//       localizationsDelegates: [
+//         CustomFeedbackLocalizations.delegate,
+//       ],
+//       localeOverride: Get.locale,
+//       child: child,
+//     );
+//   }
+// }
 
-  const FeedbackWidget({Key? key, required this.child}) : super(key: key);
+// // Custom localization for feedback package
+// class CustomFeedbackLocalizations extends FeedbackLocalizations {
+//   const CustomFeedbackLocalizations();
 
-  @override
-  Widget build(BuildContext context) {
-    return BetterFeedback(
-      child: child,
-      pixelRatio: 2.0, // Default pixel ratio
-      theme: FeedbackThemeData(
-        bottomSheetTextInputStyle: const TextStyle(color: Colors.black),
-        bottomSheetDescriptionStyle: const TextStyle(color: Colors.black),
-        feedbackSheetHeight: 0.25,
-        sheetIsDraggable: true,
-      ),
-      feedbackBuilder: (context, onSubmit, controller) {
-        return FeedbackForm(onSubmit: onSubmit);
-      },
-    );
-  }
-}
+//   static const LocalizationsDelegate<FeedbackLocalizations> delegate = _CustomFeedbackLocalizationsDelegate();
 
-//********************************************************************************
+//   @override
+//   String get navigate => 'Navigate'.tr;
 
+//   @override
+//   String get draw => 'Draw'.tr;
 
+//   @override
+//   String get feedbackDescriptionText => 'What\'s wrong?'.tr;
 
-class FeedbackForm extends StatefulWidget {
-  final Future<void> Function(String feedback, {Map<String, dynamic>? extras}) onSubmit;
+//   @override
+//   String get submitButtonText => 'Submit'.tr;
+// }
 
-  FeedbackForm({required this.onSubmit});
+// class _CustomFeedbackLocalizationsDelegate extends LocalizationsDelegate<FeedbackLocalizations> {
+//   const _CustomFeedbackLocalizationsDelegate();
 
-  @override
-  _FeedbackFormState createState() => _FeedbackFormState();
-}
+//   @override
+//   bool isSupported(Locale locale) => true;
 
-class _FeedbackFormState extends State<FeedbackForm> {
-  // Create a TextEditingController to manage the TextField input
-  final TextEditingController feedbackController = TextEditingController();
-  bool isSubmitting = false; // Flag to track submission status
+//   @override
+//   Future<FeedbackLocalizations> load(Locale locale) async {
+//     return const CustomFeedbackLocalizations();
+//   }
 
-  @override
-  void dispose() {
-    feedbackController.dispose(); // Dispose the controller when the widget is destroyed
-    super.dispose();
-  }
+//   @override
+//   bool shouldReload(_CustomFeedbackLocalizationsDelegate old) => false;
+// }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Expanded(
-          child: Stack(
-            children: [
-              ListView(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-                physics: NeverScrollableScrollPhysics(),
-                children: <Widget>[
-                  Text(
-                    "What's Wrong".tr,
-                    maxLines: 2,
-                    style: TextStyle(),
-                  ),
-                  const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: TextFormField(
-                      controller: feedbackController, // Assign the controller here
-                      decoration: InputDecoration(
-                        hintText: 'Enter your feedback...',
-                        hintStyle: TextStyle(
-                          color: Colors.black38,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      //maxLines: null, // Allows the text field to grow vertically
-                      keyboardType: TextInputType.multiline, // Multi-line input
-                      //enableInteractiveSelection: true, // Enable text selection
-                      autofillHints: null, // Disable autofill
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        ElevatedButton(
-          onPressed: isSubmitting
-              ? null // Disable button if submission is in progress
-              : () async {
-            setState(() {
-              isSubmitting = true; // Set the flag to true to disable the button
-            });
+// class FeedbackForm extends StatefulWidget {
+//   final Future<void> Function(String feedback, {Map<String, dynamic>? extras}) onSubmit;
 
-            hideKeyboard();
-            try {
-              await Future.delayed(Duration(milliseconds: 1500)); // Simulate a delay
+//   FeedbackForm({required this.onSubmit});
+//   @override
+//   State<FeedbackForm> createState() => _FeedbackFormState();
+// }
 
-              // Attempt to submit the feedback
-              await widget.onSubmit(
-                feedbackController.text,
-                extras: {
-                  'additionalInfo': 'Any extra information you want to pass',
-                },
-              );
+// class _FeedbackFormState extends State<FeedbackForm> {
+//   // Create a TextEditingController to manage the TextField input
+//   final TextEditingController feedbackController = TextEditingController();
+//   bool isSubmitting = false; // Flag to track submission status
 
-              // If successful, reset the form (you can choose to reset or leave as is)
-              setState(() {
-                isSubmitting = false; // Optionally reset the form
-                feedbackController.clear(); // Clear the feedback text field if needed
-              });
-            } catch (e) {
-              // If there's an error, handle it and show an error message (you can customize this)
-              setState(() {
-                isSubmitting = false; // Re-enable the button on error
-              });
+//   @override
+//   void dispose() {
+//     feedbackController.dispose(); // Dispose the controller when the widget is destroyed
+//     super.dispose();
+//   }
 
-              print("## feedback error : $e");
-              animatedSnack(message: 'An error occurred. Please try again.');
-
-            }
-
-          },
-          child: isSubmitting
-              ? SizedBox(
-            width: 20.0, // Adjust the size here
-            height: 20.0,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.0, // Adjust the thickness of the circle
-            ),
-          ) // Show a loading spinner while submitting
-              : Text('Submit'.tr), // Show the button text when not submitting
-        ),        const SizedBox(height: 18),
-      ],
-    );
-  }
-}
-
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       color: Color(0xFF1A1A1A),
+//       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+//       child: Column(
+//         mainAxisSize: MainAxisSize.min,
+//         children: [
+//           Expanded(
+//             child: Stack(
+//               children: [
+//                 ListView(
+//                   padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+//                   physics: NeverScrollableScrollPhysics(),
+//                   children: <Widget>[
+//                     Text(
+//                       "What's Wrong !".tr,
+//                       maxLines: 2,
+//                       style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+//                     ),
+//                     const SizedBox(height: 10),
+//                     Padding(
+//                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
+//                       child: TextFormField(
+//                         controller: feedbackController,
+//                         decoration: InputDecoration(
+//                           hintText: 'Enter your feedback...'.tr,
+//                           hintStyle: TextStyle(
+//                             color: Colors.white54,
+//                             fontSize: 16.0,
+//                             fontWeight: FontWeight.w400,
+//                           ),
+//                           enabledBorder: OutlineInputBorder(
+//                             borderRadius: BorderRadius.circular(8),
+//                             borderSide: BorderSide(color: Colors.white24),
+//                           ),
+//                           focusedBorder: OutlineInputBorder(
+//                             borderRadius: BorderRadius.circular(8),
+//                             borderSide: BorderSide(color: Cm.primaryColor),
+//                           ),
+//                           filled: true,
+//                           fillColor: Color(0xFF232323),
+//                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//                         ),
+//                         style: TextStyle(color: Colors.white),
+//                         keyboardType: TextInputType.multiline,
+//                         autofillHints: null,
+//                         cursorColor: Cm.primaryColor,
+//                       ),
+//                     ),
+//                   ],
+//                 ),
+//               ],
+//             ),
+//           ),
+//           Row(
+//             mainAxisAlignment: MainAxisAlignment.center,
+//             children: [
+//               ElevatedButton(
+//                 onPressed: isSubmitting
+//                     ? null // Disable button if submission is in progress
+//                     : () async {
+//                   setState(() {
+//                     isSubmitting = true;
+//                   });
+//                   FocusScope.of(context).requestFocus(FocusNode());
+//                   try {
+//                     await Future.delayed(Duration(milliseconds: 1500));
+//                     await widget.onSubmit(
+//                       feedbackController.text,
+//                       extras: {
+//                         'additionalInfo': 'Any extra information you want to pass',
+//                       },
+//                     );
+//                     setState(() {
+//                       isSubmitting = false;
+//                       feedbackController.clear();
+//                     });
+//                   } catch (e) {
+//                     setState(() {
+//                       isSubmitting = false;
+//                     });
+//                     print("## feedback error : $e");
+//                     ScaffoldMessenger.of(context).showSnackBar(
+//                       SnackBar(content: Text('An error occurred. Please try again.'.tr)),
+//                     );
+//                   }
+//                 },
+//                 style: ElevatedButton.styleFrom(
+//                   backgroundColor: Cm.primaryColor,
+//                   foregroundColor: Colors.white,
+//                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+//                   shape: RoundedRectangleBorder(
+//                     borderRadius: BorderRadius.circular(8),
+//                   ),
+//                 ),
+//                 child: isSubmitting
+//                     ? SizedBox(
+//                         width: 20.0,
+//                         height: 20.0,
+//                         child: CircularProgressIndicator(
+//                           strokeWidth: 2.0,
+//                           color: Cm.secondaryColor,
+//                         ),
+//                       )
+//                     : Text('Submit'.tr, style: TextStyle(fontSize: 16)),
+//               ),
+//             ],
+//           ),
+//           const SizedBox(height: 18),
+//         ],
+//       ),
+//     );
+//   }
+// }

@@ -29,6 +29,17 @@ dependencies:
 #  firebase_app_check: ^0.3.2
 #  firebase_remote_config: ^5.3.0
 
+  cloud_firestore: ^6.0.0
+  firebase_auth: ^6.0.0
+  firebase_core: ^4.0.0
+  firebase_database: ^12.0.0
+  firebase_storage: ^13.0.0
+  firebase_messaging: ^16.0.0
+  firebase_crashlytics: ^5.0.0
+  firebase_analytics: ^12.0.0
+  cloud_functions: ^6.0.0
+  firebase_app_check: ^0.4.0
+  firebase_remote_config: ^6.0.0
 
   #fb
 #  firebase_core: 3.8.1
@@ -44,22 +55,11 @@ dependencies:
 #  firebase_remote_config: 5.2.0
 
     #firebase
-  firebase_core: ^3.6.0
-  cloud_firestore: ^5.4.4
-  firebase_database: ^11.1.4
-  firebase_auth: ^5.3.1
-  firebase_storage: ^12.3.3
-  firebase_messaging: ^15.1.6
-  firebase_dynamic_links: ^6.0.11
-  cloud_functions: ^5.1.5
-  firebase_analytics: ^11.3.5
-  firebase_app_check: ^0.3.1+6
-  firebase_remote_config: ^5.2.0
-  #auth
-  google_sign_in: ^6.2.2
+
+ 
 
   #notifs
-  flutter_local_notifications: ^18.0.1
+  flutter_local_notifications: ^19.4.0
   googleapis_auth: ^1.6.0
   badges: ^3.1.2
 
@@ -70,7 +70,7 @@ dependencies:
   saver_gallery: ^4.0.1
   flutter_svg: ^2.0.10+1 #2.0.17 BLOCK
   #image_editor_plus: ^1.0.6
-
+  flutter_branch_sdk: ^8.6.0
   #basics
   connectivity_plus: ^6.1.0
   permission_handler: ^11.3.1
@@ -117,7 +117,7 @@ dependencies:
 
   #
 
-  google_maps_flutter: ^2.9.0
+  google_maps_flutter: ^2.12.3
   geolocator: ^13.0.2
   geocoding: ^3.0.0
   geoflutterfire_plus: ^0.0.32
@@ -126,7 +126,7 @@ dependencies:
   http: ^1.2.1
   feedback: ^3.2.0
   intl: ^0.20.2
-  share_plus: ^10.1.4
+  share_plus: ^11.0.0
 
 
   country_code_picker: ^3.0.0
@@ -163,7 +163,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  flutter_launcher_icons: ^0.14.2
+  flutter_launcher_icons: ^0.13.0
 
 
 flutter:

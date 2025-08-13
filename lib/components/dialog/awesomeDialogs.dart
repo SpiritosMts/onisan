@@ -39,14 +39,43 @@ showVerifyConnexion(){
   ).show();
 }
 
-showLoading({required String text}) {
+// Modified showLoading function to return the dialog reference
+AwesomeDialog showLoading({required String text}) {
+  return AwesomeDialog(
+    dialogBackgroundColor: Cm.bgCol2,
+    dismissOnBackKeyPress: false,
+    autoDismiss: false,
+    customHeader: Transform.scale(
+      scale: .7,
+      child: LoadingIndicator(
+        indicatorType: Indicator.ballClipRotate,
+        colors: [Cm.primaryColor],
+        strokeWidth: 10,
+      ),
+    ),
+    context: Get.context!,
+    dismissOnTouchOutside: false,
+    animType: AnimType.scale,
+    headerAnimationLoop: false,
+    dialogType: DialogType.noHeader,
+    descTextStyle: GoogleFonts.almarai(
+      textStyle: const TextStyle(height: 1.5),
+    ),
+    title: text,
+    desc: 'Please wait'.tr,
+    onDismissCallback: (DismissType type) {
+      print('## Loading dialog dismissed: $type');
+    },
+  )..show(); // Use cascade operator to show and return the dialog
+}
 
+/// Enhanced loading dialog that returns the dialog instance for better control
+AwesomeDialog showLoadingDialog({required String text}) {
   return AwesomeDialog(
     dialogBackgroundColor: Cm.bgCol2,
 
-    dismissOnBackKeyPress: true,
-    //change later to false
-    autoDismiss: true,
+    dismissOnBackKeyPress: false, // Prevent accidental dismissal
+    autoDismiss: false, // Must be dismissed programmatically
     customHeader: Transform.scale(
       scale: .7,
       child:  LoadingIndicator(
@@ -62,16 +91,19 @@ showLoading({required String text}) {
     headerAnimationLoop: false,
     dialogType: DialogType.noHeader,
 
-    //padding: EdgeInsets.all(8),
     descTextStyle: GoogleFonts.almarai(
       textStyle: const TextStyle(
-
           height: 1.5
       ),
     ),
     title: text,
     desc: 'Please wait'.tr,
-  ).show();
+    
+    // Add callback to track when dialog is shown/dismissed
+    onDismissCallback: (DismissType type) {
+      print('## Enhanced loading dialog dismissed: $type');
+    },
+  );
 }
 
 showFailed({String? faiText}) {
@@ -98,7 +130,6 @@ showFailed({String? faiText}) {
       onDismissCallback: (type) {
         debugPrint('Dialog Dissmiss from callback $type');
       }).show();
-  ;
 }
 
 showSuccess({String? sucText, Function()? btnOkPress}) {

@@ -41,13 +41,14 @@ class Cm {
   // Getter methods to retrieve colors from the current palette
   static Color get primaryColor => _currentPalette.primaryColor;
   static Color get secondaryColor => _currentPalette.secondaryColor;
-  static Color get bgCol => _currentPalette.bgCol;
-  static Color get bgCol2 => _currentPalette.bgCol2;
-  static Color get textCol => _currentPalette.textCol;
-  static Color get textCol2 => _currentPalette.textCol2;
-  static Color get textColPr => _currentPalette.textColPr;
-  static Color get textColSe => _currentPalette.textColSe;
-  static Color get textHintCol => _currentPalette.textHintCol;
+  static Color get bgCol => _currentPalette.bgCol;// background color (scaffold...)
+  static Color get bgCol2 => _currentPalette.bgCol2;// background color 2 (card,dialog,container,appbar...)
+  static Color get textCol => _currentPalette.textCol;// text color (main) use generally on bgCol containers or scaffold or buttons
+  static Color get textCol2 => _currentPalette.textCol2;// text color 2 (secondary) use generally on bgCol2
+  static Color get shadowCol => _currentPalette.shadowCol;// shadow color (used in cards
+  static Color get textColPr => _currentPalette.textColPr;//text color primary use generally on primaryColor
+  static Color get textColSe => _currentPalette.textColSe;// text color secondary use generally on secondaryColor
+  static Color get textHintCol => _currentPalette.textHintCol;//text hint color (input fields) and used for min opacity
   static Color get textHintCol2 => _currentPalette.textHintCol2;
   static Color get textFormHintCol => _currentPalette.textFormHintCol;
   static Color get greyCol => _currentPalette.greyCol;
@@ -81,6 +82,10 @@ class Cm {
 
 Color lightenColor(Color color, [double amount = 0.3]) {
   return Color.lerp(color, Colors.white, amount) ?? color;
+}
+
+Color darkenColor(Color color, [double amount = 0.3]) {
+  return Color.lerp(color, Colors.black, amount) ?? color;
 }
 
 //all
