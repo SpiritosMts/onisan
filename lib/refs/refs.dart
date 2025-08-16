@@ -36,15 +36,6 @@ CollectionReference prDataColl = FirebaseFirestore.instance.collection('prData')
 CollectionReference usersColl = FirebaseFirestore.instance.collection('users');
 CollectionReference notificationsColl = FirebaseFirestore.instance.collection('notifications');
 
-CollectionReference notifsColl({String? userID, bool specificColl = true}) {
-  if (!specificColl) return notificationsColl;
-
-  if (userID == null || userID.isEmpty) {
-    throw ArgumentError('## UserID cannot be null or empty to get notifs');
-  }
-  return usersColl.doc(userID).collection('notifications');
-}
-
 ///**************** NavigatorService
 // class NavigatorService {
 //   static GlobalKey<NavigatorState>? _navigatorKey;
