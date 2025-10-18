@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  image_cropper: 8.0.2 #BLOCK UPDATE
+  image_cropper: ^11.0.0
 
    #  ^3.8.1 means:  Accept any version >=3.8.1 <4.0.0. so 3.10.0 can be installed
 
