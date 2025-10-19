@@ -1,17 +1,16 @@
-
-
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:onisan/components/myTheme/themeManager.dart';
 
 ///CALL
 // List<XFile>? images = await showImageDialogMulti(
 // title: "Select an Image",
 // selectMulti: false, // Single image selection
+// enableCrop: true, // Enable cropping with free aspect ratio
 // );
 Future<List<XFile>?> showImageDialog({
   String title = "Choose source",
@@ -23,9 +22,39 @@ Future<List<XFile>?> showImageDialog({
   Color? bgColor,
   Color? textColor,
   bool selectMulti = false, // Parameter to choose multi-image or single-image selection
+  bool enableCrop = true, // Enable image cropping with free aspect ratio
 }) async {
   final ImagePicker _picker = ImagePicker();
   List<XFile>? selectedImages;
+  Future<CroppedFile?> _cropImage(XFile imageFile) async {
+    return await ImageCropper().cropImage(
+      sourcePath: imageFile.path,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Image'.tr,
+          toolbarColor: Cm.bgCol,
+          toolbarWidgetColor: Cm.textCol2,
+          backgroundColor: Cm.bgCol,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false, // Free aspect ratio
+          hideBottomControls: false,
+          cropFrameColor: Cm.primaryColor,
+          cropGridColor: Cm.primaryColor.withOpacity(0.5),
+          activeControlsWidgetColor: Cm.primaryColor,
+        ),
+        IOSUiSettings(
+          title: 'Crop Image'.tr,
+          aspectRatioLockEnabled: false, // Free aspect ratio
+          resetAspectRatioEnabled: true,
+          aspectRatioPickerButtonHidden: false,
+          rotateButtonsHidden: false,
+          rotateClockwiseButtonHidden: false,
+          cancelButtonTitle: 'Cancel'.tr,
+          doneButtonTitle: 'Done'.tr,
+        ),
+      ],
+    );
+  }
 
   Future<void> _selectImages(ImageSource source) async {
     if (source == ImageSource.gallery) {
@@ -41,6 +70,17 @@ Future<List<XFile>?> showImageDialog({
       XFile? image = await _picker.pickImage(source: source); // Always single image for camera
       if (image != null) {
         selectedImages = [image]; // Wrap single image in a list
+      }
+    }
+
+    // Apply cropping if enabled and only single image is selected
+    if (enableCrop && selectedImages != null && selectedImages!.length == 1) {
+      final croppedFile = await _cropImage(selectedImages!.first);
+      if (croppedFile != null) {
+        selectedImages = [XFile(croppedFile.path)];
+      } else {
+        // User cancelled cropping, return null
+        selectedImages = null;
       }
     }
 
@@ -65,7 +105,10 @@ Future<List<XFile>?> showImageDialog({
         content: SingleChildScrollView(
           child: ListBody(
             children: [
-               Divider(height: 1,color: Cm.textHintCol2,),
+              Divider(
+                height: 1,
+                color: Cm.textHintCol2,
+              ),
               ListTile(
                 onTap: () => _selectImages(ImageSource.gallery),
                 title: Text(
@@ -74,7 +117,10 @@ Future<List<XFile>?> showImageDialog({
                 ),
                 leading: Icon(galleryIcon, color: iconColor ?? Cm.primaryColor),
               ),
-              Divider(height: 1,color: Cm.textHintCol2,),
+              Divider(
+                height: 1,
+                color: Cm.textHintCol2,
+              ),
               ListTile(
                 onTap: () => _selectImages(ImageSource.camera),
                 title: Text(
@@ -91,7 +137,6 @@ Future<List<XFile>?> showImageDialog({
   );
 }
 
-
 //*************************************************************************************************
 
 Future<List<XFile>?> pickImagesBottom({
@@ -104,13 +149,42 @@ Future<List<XFile>?> pickImagesBottom({
   Color? bgColor,
   Color? textColor,
   bool selectMulti = false, // Parameter to choose multi-image or single-image selection
-
+  bool enableCrop = true, // Enable image cropping with free aspect ratio
 }) async {
   final ImagePicker _picker = ImagePicker();
   print('## picking image ...');
 
-
   Completer<List<XFile>?> completer = Completer<List<XFile>?>();
+
+  Future<CroppedFile?> _cropImageBottom(XFile imageFile) async {
+    return await ImageCropper().cropImage(
+      sourcePath: imageFile.path,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Crop Image'.tr,
+          toolbarColor: Cm.bgCol,
+          toolbarWidgetColor: Cm.textCol2,
+          backgroundColor: Cm.bgCol,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false, // Free aspect ratio
+          hideBottomControls: false,
+          cropFrameColor: Cm.primaryColor,
+          cropGridColor: Cm.primaryColor.withOpacity(0.5),
+          activeControlsWidgetColor: Cm.primaryColor,
+        ),
+        IOSUiSettings(
+          title: 'Crop Image'.tr,
+          aspectRatioLockEnabled: false, // Free aspect ratio
+          resetAspectRatioEnabled: true,
+          aspectRatioPickerButtonHidden: false,
+          rotateButtonsHidden: false,
+          rotateClockwiseButtonHidden: false,
+          cancelButtonTitle: 'Cancel'.tr,
+          doneButtonTitle: 'Done'.tr,
+        ),
+      ],
+    );
+  }
 
   Future<void> selectImages(ImageSource source) async {
     List<XFile>? images;
@@ -127,6 +201,17 @@ Future<List<XFile>?> pickImagesBottom({
       XFile? image = await _picker.pickImage(source: source); // Single-image selection for camera
       if (image != null) {
         images = [image];
+      }
+    }
+
+    // Apply cropping if enabled and only single image is selected
+    if (enableCrop && images != null && images.length == 1) {
+      final croppedFile = await _cropImageBottom(images.first);
+      if (croppedFile != null) {
+        images = [XFile(croppedFile.path)];
+      } else {
+        // User cancelled cropping, return null
+        images = null;
       }
     }
 
