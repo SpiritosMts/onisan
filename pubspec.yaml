@@ -111,7 +111,6 @@ dependencies:
   # rive: REMOVED - No version supports 16KB page sizes yet (GitHub issues #458, #488, #539, #547)
   # rive_animated_icon: REMOVED - Depends on rive ^0.13.20
   flutter_animate: ^4.5.2  # OK - no rive dependency
-  # awesome_dialog: REMOVED - Depends on rive for animations
   animations: ^2.0.11
   animated_text_kit: ^4.2.2
   shimmer: ^3.0.0

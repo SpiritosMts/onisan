@@ -1,4 +1,3 @@
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,8 +11,7 @@ class LoadingService extends GetxService {
   var message = ''.obs;
   var currentType = LoadingType.overlay.obs;
 
-  // Store current awesome dialog reference
-  AwesomeDialog? _currentAwesomeDialog;
+  // Dialog reference removed - using simple Flutter dialogs for 16KB support
 
   @override
   void onInit() {
@@ -48,7 +46,7 @@ class LoadingService extends GetxService {
     }
   }
 
-  /// Show awesome dialog loading
+  /// Show simple dialog loading (replaced AwesomeDialog for 16KB support)
   void showDialog({
     String? loadingMessage,
     Color? primaryColor,
@@ -66,45 +64,42 @@ class LoadingService extends GetxService {
         message.value = loadingMessage ?? 'Loading...'.tr;
         currentType.value = LoadingType.dialog;
 
-        _currentAwesomeDialog = AwesomeDialog(
-          context: Get.context!,
-          dialogType: DialogType.noHeader,
-          dialogBackgroundColor: backgroundColor ?? Cm.bgCol2,
-          dismissOnBackKeyPress: dismissible,
-          dismissOnTouchOutside: dismissible,
-          autoDismiss: true, // Important: let AwesomeDialog handle auto dismiss
-          animType: AnimType.scale,
-          headerAnimationLoop: false,
-          customHeader: Transform.scale(
-            scale: 0.7,
-            child: LoadingIndicator(
-              indicatorType: Indicator.ballClipRotate,
-              colors: [primaryColor ?? Cm.primaryColor],
-              strokeWidth: 10,
+        Get.dialog(
+          WillPopScope(
+            onWillPop: () async => dismissible,
+            child: AlertDialog(
+              backgroundColor: backgroundColor ?? Cm.bgCol2,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Transform.scale(
+                    scale: 0.7,
+                    child: LoadingIndicator(
+                      indicatorType: Indicator.ballClipRotate,
+                      colors: [primaryColor ?? Cm.primaryColor],
+                      strokeWidth: 10,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    message.value,
+                    style: GoogleFonts.almarai(),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Please wait'.tr,
+                    style: GoogleFonts.almarai(
+                      textStyle: const TextStyle(height: 1.5),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
-          title: message.value,
-          desc: 'Please wait'.tr,
-          descTextStyle: GoogleFonts.almarai(
-            textStyle: const TextStyle(height: 1.5),
-          ),
-          onDismissCallback: (DismissType type) {
-            print('## Awesome dialog dismissed: $type');
-            _resetDialogState();
-          },
+          barrierDismissible: dismissible,
         );
-
-        // Show the dialog and track the result
-        _currentAwesomeDialog!.show().then((result) {
-          print("## Dialog show completed with result: $result");
-          // Ensure state is reset when dialog completes
-          if (isLoading.value) {
-            _resetDialogState();
-          }
-        }).catchError((error) {
-          print("## Error showing dialog: $error");
-          _resetDialogState();
-        });
         
         isLoading.value = true;
       } else {
@@ -112,7 +107,6 @@ class LoadingService extends GetxService {
       }
     } catch (e) {
       print("## Error showing dialog loading: $e");
-      // Reset state on error
       _resetDialogState();
     }
   }
@@ -121,7 +115,6 @@ class LoadingService extends GetxService {
   void _resetDialogState() {
     isLoading.value = false;
     message.value = '';
-    _currentAwesomeDialog = null;
   }
 
   /// Generic show method (defaults to overlay)
@@ -172,64 +165,20 @@ class LoadingService extends GetxService {
       // Force reset state even on error
       isLoading.value = false;
       message.value = '';
-      _currentAwesomeDialog = null;
     }
   }
 
-  /// Enhanced method to hide AwesomeDialog with multiple fallback strategies
+  /// Simplified method to hide dialog (no AwesomeDialog needed)
   void _hideAwesomeDialog() {
     try {
-      if (_currentAwesomeDialog != null) {
-        print("## Attempting to dismiss AwesomeDialog");
-        
-        // Strategy 1: Try normal dismiss first
-        try {
-          _currentAwesomeDialog!.dismiss();
-        } catch (e) {
-          print("## Error in normal dismiss: $e");
-        }
-        
-        // Strategy 2: Force close using Navigator.pop if dialog is still open
-        Future.delayed(const Duration(milliseconds: 50), () {
-          if (Get.isDialogOpen == true && isLoading.value) {
-            print("## Force closing dialog with Navigator.pop");
-            try {
-              Navigator.of(Get.context!, rootNavigator: false).pop();
-            } catch (e) {
-              print("## Error with Navigator.pop: $e");
-              // Try with root navigator as fallback
-              try {
-                Navigator.of(Get.context!, rootNavigator: true).pop();
-              } catch (e2) {
-                print("## Error with root Navigator.pop: $e2");
-              }
-            }
-          }
-          
-          // Ensure state is reset regardless
-          _resetDialogState();
-        });
-        
-        // Reset reference immediately
-        _currentAwesomeDialog = null;
-      }
-    } catch (e) {
-      print("## Error hiding AwesomeDialog: $e");
-      // Force cleanup
-      _resetDialogState();
-      
-      // Emergency close any open dialogs
+      print("## Attempting to dismiss dialog");
       if (Get.isDialogOpen == true) {
-        try {
-          Navigator.of(Get.context!, rootNavigator: false).pop();
-        } catch (e2) {
-          try {
-            Navigator.of(Get.context!, rootNavigator: true).pop();
-          } catch (e3) {
-            print("## All Navigator.pop attempts failed: $e3");
-          }
-        }
+        Get.back();
       }
+      _resetDialogState();
+    } catch (e) {
+      print("## Error hiding dialog: $e");
+      _resetDialogState();
     }
   }
 
@@ -241,33 +190,17 @@ class LoadingService extends GetxService {
       // Force hide overlay
       GlobalLoadingWidget.hide();
       
-      // Force hide awesome dialog
-      if (_currentAwesomeDialog != null) {
+      // Force hide dialog
+      if (Get.isDialogOpen == true) {
         try {
-          _currentAwesomeDialog!.dismiss();
+          Get.back();
         } catch (e) {
-          print("## Error dismissing dialog: $e");
-        }
-      }
-      
-      // Aggressively close any open dialogs using Navigator
-      int attempts = 0;
-      while (Get.isDialogOpen == true && attempts < 5) {
-        try {
-          print("## Force closing dialog attempt ${attempts + 1}");
-          Navigator.of(Get.context!, rootNavigator: false).pop();
-          attempts++;
-          
-          // Small delay to let the pop complete
-          Future.delayed(const Duration(milliseconds: 10));
-        } catch (e) {
-          print("## Error closing dialog with Navigator.pop: $e");
+          print("## Error closing dialog: $e");
           try {
             Navigator.of(Get.context!, rootNavigator: true).pop();
           } catch (e2) {
             print("## Error with root Navigator.pop: $e2");
           }
-          break;
         }
       }
       

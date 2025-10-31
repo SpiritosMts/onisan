@@ -38,7 +38,6 @@ export 'components/errorWidgets/errorScreen.dart';
 export 'components/feedback/feedback.dart';
 export 'components/feedback/feedback_model.dart';
 export 'components/dialog/bottomSheet.dart';
-export 'components/dialog/awesomeDialogs.dart';
 export 'components/dialog/simpleDialog.dart';
 export 'components/json/jsonFormat.dart';
 export 'components/geoMaps/geoMapFuncs.dart';
