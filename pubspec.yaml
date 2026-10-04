@@ -120,7 +120,7 @@ dependencies:
 
   google_maps_flutter: ^2.12.3
   geolocator: ^13.0.2
-  geocoding: ^3.0.0
+  geocoding: ^4.0.0 # 3.x android module compiles against SDK 33, rejected by AGP 9
   geoflutterfire_plus: ^0.0.32
   #go_router: ^14.2.0
   google_fonts: ^6.2.1

@@ -632,7 +632,7 @@ class CSCPickerState extends State<CSCPicker> {
   ///Read JSON country data from assets
   Future<dynamic> getResponse() async {
     var res = await rootBundle
-        .loadString('assets/country.json');
+        .loadString('packages/onisan/assets/country.json');
     return jsonDecode(res);
   }
 
