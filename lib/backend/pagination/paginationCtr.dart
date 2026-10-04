@@ -100,6 +100,57 @@ class PaginationCtr extends GetxController {
     }
   }
 
+  /// Pages through documents by id ([ids] can be any length; each page is one
+  /// `whereIn` query of at most 30 ids). Missing documents are skipped.
+  Future<void> loadItemsByIds<T>({
+    required String key,
+    required CollectionReference collectionRef,
+    required List<String> ids,
+    required T Function(DocumentSnapshot doc) mapDoc,
+    int limit = 15,
+  }) async {
+    final state = paginationState[key];
+    if (state == null) return;
+
+    final isLoading = state['isLoading'] as RxBool;
+    final isLoadingMore = state['isLoadingMore'] as RxBool;
+    final items = state['items'] as RxList<T>;
+    final hasMore = state['hasMore'] as RxBool;
+    final errorMsg = state['errorMsg'] as RxString;
+    final int offset = (state['offset'] as int?) ?? 0;
+    final loadMore = items.isNotEmpty;
+
+    if ((loadMore ? isLoadingMore.value : isLoading.value) || !hasMore.value) return;
+
+    final uniqueIds = ids.where((id) => id.isNotEmpty).toSet().toList();
+    if (offset >= uniqueIds.length) {
+      hasMore.value = false;
+      return;
+    }
+
+    (loadMore ? isLoadingMore : isLoading).value = true;
+    errorMsg.value = '';
+    try {
+      final pageSize = limit.clamp(1, 30);
+      final slice = uniqueIds.skip(offset).take(pageSize).toList();
+      final snap = await collectionRef.where(FieldPath.documentId, whereIn: slice).get();
+      items.addAll(snap.docs.where((d) => d.exists).map(mapDoc));
+      state['offset'] = offset + slice.length;
+      hasMore.value = offset + slice.length < uniqueIds.length;
+    } catch (e) {
+      print("## Data failed to load: $e");
+      errorMsg.value = 'Data failed to load';
+    } finally {
+      (loadMore ? isLoadingMore : isLoading).value = false;
+    }
+  }
+
+  /// Clears a list so the next load starts from the beginning.
+  void resetPagination<T>(String key) {
+    paginationState.remove(key);
+    initPagination<T>(key);
+  }
+
   void removeItemFromList<T>(String itemId, String key) {
     final state = paginationState[key];
     if (state != null) {

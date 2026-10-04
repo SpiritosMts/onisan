@@ -61,33 +61,25 @@ Future<Placemark?> getNonArabicStreetAndLocalityPlacemark(double latitude, doubl
 }
 
 
+/// Returns {lat, lng, country, city, street}, or an empty map when location is
+/// unavailable (service off, permission denied, timeout). Never throws.
 Future<Map<String,dynamic>> getCurrentLocationInfo() async {
-
-  Map<String,dynamic>? locationInfo;
   try {
-
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Test if location services are enabled.
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      //animatedSnack(message: "Location services are disabled");
-
-      return Future.error('## Location services are disabled.');
+      print('## Location services are disabled.');
+      return {};
     }
 
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         animatedSnack(message: "Location permission denied");
-
-        return Future.error('## Location permissions are denied');
+        return {};
       }
     }
     if (permission == LocationPermission.deniedForever) {
-      //animatedSnack(message: "Location permission denied");
       showBottomSheetDialog(
           title: "Location Permission Required",
           description: "Location permission has been denied. Please enable it in the app settings to use this feature.",
@@ -96,43 +88,30 @@ Future<Map<String,dynamic>> getCurrentLocationInfo() async {
             Geolocator.openAppSettings();
           }
       );
-      return Future.error('## Location permissions are permanently denied, we cannot request permissions.');
+      return {};
     }
 
-    print('## Location permissions Granted');
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(timeLimit: Duration(seconds: 15)),
+    );
 
-
-    Position position =await Geolocator.getCurrentPosition();
-
-
-
-    Placemark? place = await getNonArabicStreetAndLocalityPlacemark(
+    final place = await getNonArabicStreetAndLocalityPlacemark(
       position.latitude,
       position.longitude,
     );
 
-
-
-    locationInfo={
-      'lat': position.latitude??0.0,
-      'lng': position.longitude??0.0,
-      'country': place!.country ?? '',
-      'city': place!.locality ?? '',
-      'street': place!.street ?? '',
+    final locationInfo = <String, dynamic>{
+      'lat': position.latitude,
+      'lng': position.longitude,
+      'country': place?.country ?? '',
+      'city': place?.locality ?? '',
+      'street': place?.street ?? '',
     };
-
     printJson(locationInfo);
-
-
-
-
-
-
+    return locationInfo;
   } catch (e) {
-
     print("## error cant found current location: $e");
-  }finally{
-    return locationInfo!;
+    return {};
   }
 }
 
@@ -152,9 +131,9 @@ void showPickLocationManually({
 
   void checkIfChanged() {
     isChanged = allFieldsSelected() &&
-        (currentValues['country'] == null || selectedCountry != currentValues['country']) ||
-        (currentValues['state'] == null || selectedState != currentValues['state']) ||
-        (currentValues['city'] == null || selectedCity != currentValues['city']);
+        (selectedCountry != currentValues['country'] ||
+            selectedState != currentValues['state'] ||
+            selectedCity != currentValues['city']);
 
     print("## changed country=$selectedCountry, state=$selectedState, city=$selectedCity ");
   }

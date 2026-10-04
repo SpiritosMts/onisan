@@ -19,7 +19,7 @@ class AnimatedSnackBar {
   }) {
     if (_isShowing) return;
 
-    final context = NavigatorService.navigatorKey!.currentState?.overlay?.context;
+    final context = NavigatorService.navigatorKey?.currentState?.overlay?.context;
     if (context == null) {
       print("## Error: No valid context found to display the snackbar.");
       return;

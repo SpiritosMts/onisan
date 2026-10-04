@@ -150,6 +150,8 @@ Future<List<XFile>?> pickImagesBottom({
   Color? textColor,
   bool selectMulti = false, // Parameter to choose multi-image or single-image selection
   bool enableCrop = true, // Enable image cropping with free aspect ratio
+  int? imageQuality, // 0-100 JPEG quality (null = original)
+  double? maxWidth, // downscale wider images (null = original)
 }) async {
   final ImagePicker _picker = ImagePicker();
   print('## picking image ...');
@@ -190,15 +192,15 @@ Future<List<XFile>?> pickImagesBottom({
     List<XFile>? images;
     if (source == ImageSource.gallery) {
       if (selectMulti) {
-        images = await _picker.pickMultiImage(); // Multi-image selection for gallery
+        images = await _picker.pickMultiImage(imageQuality: imageQuality, maxWidth: maxWidth); // Multi-image selection for gallery
       } else {
-        XFile? image = await _picker.pickImage(source: source); // Single-image selection for gallery
+        XFile? image = await _picker.pickImage(source: source, imageQuality: imageQuality, maxWidth: maxWidth); // Single-image selection for gallery
         if (image != null) {
           images = [image];
         }
       }
     } else if (source == ImageSource.camera) {
-      XFile? image = await _picker.pickImage(source: source); // Single-image selection for camera
+      XFile? image = await _picker.pickImage(source: source, imageQuality: imageQuality, maxWidth: maxWidth); // Single-image selection for camera
       if (image != null) {
         images = [image];
       }
@@ -217,11 +219,11 @@ Future<List<XFile>?> pickImagesBottom({
 
     if (images != null && images.isNotEmpty) {
       print("## Images selected: ${images.map((img) => img.name).join(', ')}");
+      if (!completer.isCompleted) completer.complete(images); // Complete with the selected images
       Get.back(); // Dismiss the bottom sheet
-      completer.complete(images); // Complete with the selected images
     } else {
+      // Nothing picked: keep the sheet open so the user can retry; dismissing it completes with null
       print("## No images selected");
-      completer.complete(null); // Complete with null if no images are selected
     }
   }
 
@@ -252,7 +254,10 @@ Future<List<XFile>?> pickImagesBottom({
         ),
       ),
     ),
-  );
+  ).whenComplete(() {
+    // Sheet dismissed (swipe/back/tap outside) without a selection
+    if (!completer.isCompleted) completer.complete(null);
+  });
 
   return await completer.future; // Wait for the user's selection
 }

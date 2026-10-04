@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -21,9 +23,30 @@ class ConnectivityService {
   // **************************************
 
   final Connectivity _connectivity = Connectivity();
-  bool _isConnected = false;
+  // Optimistic until the first check completes: a false "offline" blocks app start.
+  bool _isConnected = true;
   bool wentOffline = false;
+  bool _initialized = false;
   bool isConnected() => _isConnected;
+
+  final StreamController<bool> _statusController = StreamController<bool>.broadcast();
+
+  /// Emits true/false whenever the connection status changes.
+  Stream<bool> get onStatusChange => _statusController.stream;
+
+  /// Any transport except `none` counts as connected (wifi, mobile, ethernet, vpn, other...).
+  static bool _hasConnection(List<ConnectivityResult> results) =>
+      results.isNotEmpty && results.any((r) => r != ConnectivityResult.none);
+
+  /// Checks the current status now (instead of waiting for a change event).
+  Future<bool> checkNow() async {
+    try {
+      _isConnected = _hasConnection(await _connectivity.checkConnectivity());
+    } catch (e) {
+      print('## connectivity check failed: $e');
+    }
+    return _isConnected;
+  }
 
 
 
@@ -31,6 +54,8 @@ class ConnectivityService {
   //********************************************************************
 
   void initialize() {
+    if (_initialized) return;
+    _initialized = true;
     if (kIsWeb) {
       _initializeWebConnectivity();
     } else {
@@ -44,7 +69,7 @@ class ConnectivityService {
 
     // Add listeners for connectivity changes
     _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
-      _isConnected = results.contains(ConnectivityResult.none);
+      _isConnected = _hasConnection(results);
       _handleConnectivityChange();
     });
   }
@@ -56,8 +81,9 @@ class ConnectivityService {
   }
   // Mobile/desktop connectivity implementation
   void _initializeMobileConnectivity() {
+    checkNow();
     _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
-      _isConnected = results.contains(ConnectivityResult.mobile) || results.contains(ConnectivityResult.wifi);
+      _isConnected = _hasConnection(results);
       _handleConnectivityChange();
     });
   }
@@ -65,6 +91,7 @@ class ConnectivityService {
   void _handleConnectivityChange() {
 
     print('## connection state changes....');
+    _statusController.add(_isConnected);
 
 
     if (!_isConnected) {//offline

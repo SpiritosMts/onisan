@@ -13,12 +13,14 @@ class PaginationListView extends StatefulWidget {
   final Function(String key) onLoadData;
   final ScrollController scrollController;
   final Widget Function(dynamic user) buildWidget;  // New parameter
+  final String emptyText;
 
   PaginationListView({
     required this.keyName,
     required this.onLoadData,
     required this.scrollController,
     required this.buildWidget,  // Pass custom widget
+    this.emptyText = 'No posts found.',
   });
 
   @override
@@ -60,13 +62,14 @@ class _PaginationListViewState extends State<PaginationListView> with AutomaticK
         return _buildLoadingIndicator();
       }
 
-      // Show "No posts found" only if not loading and items is empty
-      if (!state['isLoading'].value && state['items'].isEmpty) {
-        return Center(child: Text('No posts found.'));
+      final error = state['errorMsg'].value as String;
+      if (error.isNotEmpty && error != 'Empty data list' && state['items'].isEmpty) {
+        return _buildErrorMessage(error.tr);
       }
 
-      if (state['errorMsg'].value.isNotEmpty && state['items'].isEmpty) {
-        return _buildErrorMessage(state['errorMsg'].value);
+      // Show the empty text only if not loading and items is empty
+      if (!state['isLoading'].value && state['items'].isEmpty) {
+        return Center(child: Text(widget.emptyText.tr, style: TextStyle(color: Cm.textHintCol)));
       }
 
       return _buildListView(state);
